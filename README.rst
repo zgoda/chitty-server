@@ -1,6 +1,6 @@
 Chitty
 ======
 
-Chat and more.
+Chat and more. Trio + WebSockets + SSE + Redis, server implementation.
 
-Educational project.
+Educational project so don't expect much.
