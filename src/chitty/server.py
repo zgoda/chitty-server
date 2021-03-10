@@ -4,6 +4,9 @@ from trio_websocket import ConnectionClosed, WebSocketRequest, serve_websocket
 
 from .controller import route_message
 
+MAX_MESSAGE_SIZE = 2 ** 16  # 64 KB
+MESSAGE_QUEUE_SIZE = 4
+
 
 async def server(request: WebSocketRequest) -> None:
     """Connection handler.
@@ -38,4 +41,7 @@ async def main(*, host: str, port: int) -> None:
     :param port: TCP port
     :type port: int
     """
-    await serve_websocket(server, host=host, port=port, ssl_context=None)
+    await serve_websocket(
+        server, host=host, port=port, ssl_context=None,
+        max_message_size=MAX_MESSAGE_SIZE, message_queue_size=MESSAGE_QUEUE_SIZE,
+    )

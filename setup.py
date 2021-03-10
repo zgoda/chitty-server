@@ -24,6 +24,7 @@ base_reqs = [
     'trio',
     'trio-websocket',
     'redio',
+    'nanoid',
 ]
 
 test_reqs = [

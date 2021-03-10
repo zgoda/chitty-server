@@ -6,25 +6,32 @@ function will be serialised and then sent back to client as response.
 """
 
 import json
+from typing import Mapping
+
+import nanoid
 
 from .storage import redis
+from .user import User, registry
 
 
-async def register_user(client: str, *, value: str) -> None:
+async def register_user(client: str, *, value: str) -> Mapping[str, str]:
     """Register client instance as both client (the agent) and user.
+
+    This function also creates user events channel and subscribes it.
 
     :param client: client ID
     :type client: str
     :param value: user name/handle
     :type value: str
+    :return: user data
+    :rtype: Mapping[str, str]
     """
+    user = User(name=value, client_id=client, key=nanoid.generate())
     clients = await redis().hget('clients', 'clients').autodecode
     clients = set(clients or [])
-    clients.add(client)
-    users = await redis().hget('clients', 'users').autodecode
-    users = set(users or [])
-    users.add(value)
+    clients.add((user.key, user.client_id, user.name))
     db = redis()
     db.hset('clients', {'clients': json.dumps(list(clients))})
-    db.hset('clients', {'users': json.dumps(list(users))})
     await db
+    registry.add(user)
+    return user.to_map()
