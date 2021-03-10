@@ -1,6 +1,6 @@
-from typing import Mapping, Union
+from typing import Mapping, Optional, Union
 
-from .handlers import register_user
+from . import handlers
 
 MSG_TYPE_REGISTER = 'reg'
 MSG_TYPE_CREATE_TOPIC = 'topic'
@@ -31,7 +31,7 @@ MSG_FIELDS = {
 }
 
 MSG_HANDLERS = {
-    MSG_TYPE_REGISTER: register_user
+    MSG_TYPE_REGISTER: handlers.register_user,
 }
 
 
@@ -60,7 +60,9 @@ def validate_message(msg_type: str, message: Mapping[str, Union[str, int]]) -> b
     return set(message.keys()).issuperset(MSG_FIELDS[msg_type])
 
 
-async def route_message(client: str, msg: Mapping[str, Union[str, int]]) -> None:
+async def route_message(
+            client: str, msg: Mapping[str, Union[str, int]]
+        ) -> Optional[dict]:
     """Validate and route message to appropriate handler.
 
     :param client: client ID
@@ -69,6 +71,8 @@ async def route_message(client: str, msg: Mapping[str, Union[str, int]]) -> None
     :type msg: Mapping[str, Union[str, int]]
     :raises MessageRoutingError: if message is of unknown type
     :raises MessageFormatError: if message fields do not match spec
+    :return: whatever handler produces
+    :rtype: Optional[dict]
     """
     msg_type = msg.pop('type', None)
     if not msg_type or msg_type not in KNOWN_MSG_TYPES:
@@ -76,4 +80,4 @@ async def route_message(client: str, msg: Mapping[str, Union[str, int]]) -> None
     if not validate_message(msg_type, msg):
         raise MessageFormatError('Invalid message format')
     handler = MSG_HANDLERS[msg_type]
-    await handler(client, **msg)
+    return await handler(client, **msg)

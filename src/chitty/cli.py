@@ -3,7 +3,7 @@ from argparse import ArgumentParser, Namespace
 
 import trio
 
-from .server import main
+from . import server
 
 
 def parse_args() -> Namespace:
@@ -13,7 +13,7 @@ def parse_args() -> Namespace:
     return parser.parse_args()
 
 
-def run():
+def run() -> None:
     opts = parse_args()
-    entrypoint = functools.partial(main, host=opts.host, port=opts.port)
+    entrypoint = functools.partial(server.main, host=opts.host, port=opts.port)
     trio.run(entrypoint)

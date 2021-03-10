@@ -6,6 +6,13 @@ from .controller import route_message
 
 
 async def server(request: WebSocketRequest) -> None:
+    """Connection handler.
+
+    This function will be run for any incoming connection.
+
+    :param request: websocket request object
+    :type request: WebSocketRequest
+    """
     ws = await request.accept()
     while True:
         try:
@@ -16,10 +23,19 @@ async def server(request: WebSocketRequest) -> None:
                 await ws.send_message('Invalid message, expected: object')
             else:
                 client = str(request.remote)
-                await route_message(client, payload)
+                resp = await route_message(client, payload)
+                if resp:
+                    await ws.send_message(json.dumps(resp))
         except ConnectionClosed:
             break
 
 
 async def main(*, host: str, port: int) -> None:
+    """Websocket server entrypoint.
+
+    :param host: host name or IP address to bind to
+    :type host: str
+    :param port: TCP port
+    :type port: int
+    """
     await serve_websocket(server, host=host, port=port, ssl_context=None)
