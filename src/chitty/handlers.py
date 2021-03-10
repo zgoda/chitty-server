@@ -5,12 +5,10 @@ arguments required by message spec. Anything that is returned from this
 function will be serialised and then sent back to client as response.
 """
 
-import json
 from typing import Mapping
 
 import nanoid
 
-from .storage import redis
 from .user import User, registry
 
 
@@ -27,11 +25,5 @@ async def register_user(client: str, *, value: str) -> Mapping[str, str]:
     :rtype: Mapping[str, str]
     """
     user = User(name=value, client_id=client, key=nanoid.generate())
-    clients = await redis().hget('clients', 'clients').autodecode
-    clients = set(clients or [])
-    clients.add((user.key, user.client_id, user.name))
-    db = redis()
-    db.hset('clients', {'clients': json.dumps(list(clients))})
-    await db
     registry.add(user)
     return user.to_map()

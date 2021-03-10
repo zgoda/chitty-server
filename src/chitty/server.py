@@ -3,6 +3,7 @@ import json
 from trio_websocket import ConnectionClosed, WebSocketRequest, serve_websocket
 
 from .controller import route_message
+from .user import registry
 
 MAX_MESSAGE_SIZE = 2 ** 16  # 64 KB
 MESSAGE_QUEUE_SIZE = 4
@@ -17,6 +18,7 @@ async def server(request: WebSocketRequest) -> None:
     :type request: WebSocketRequest
     """
     ws = await request.accept()
+    client = str(request.remote)
     while True:
         try:
             message = await ws.get_message()
@@ -25,11 +27,11 @@ async def server(request: WebSocketRequest) -> None:
             except json.decoder.JSONDecodeError:
                 await ws.send_message('Invalid message, expected: object')
             else:
-                client = str(request.remote)
                 resp = await route_message(client, payload)
                 if resp:
                     await ws.send_message(json.dumps(resp))
         except ConnectionClosed:
+            registry.remove(client_id=client)
             break
 
 
