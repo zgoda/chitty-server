@@ -16,4 +16,7 @@ def parse_args() -> Namespace:
 def run() -> None:
     opts = parse_args()
     entrypoint = functools.partial(server.main, host=opts.host, port=opts.port)
-    trio.run(entrypoint)
+    try:
+        trio.run(entrypoint)
+    except KeyboardInterrupt:
+        print()
