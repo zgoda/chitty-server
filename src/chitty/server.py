@@ -15,7 +15,7 @@ async def server(request: WebSocketRequest) -> None:
             except json.decoder.JSONDecodeError:
                 await ws.send_message('Invalid message, expected: object')
             else:
-                client = request.remote
+                client = str(request.remote)
                 await route_message(client, payload)
         except ConnectionClosed:
             break

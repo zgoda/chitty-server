@@ -48,10 +48,28 @@ class MessageFormatError(ChatMessageException):
 
 
 def validate_message(msg_type: str, message: Mapping[str, Union[str, int]]) -> bool:
+    """Validate message structure.
+
+    :param msg_type: type of message
+    :type msg_type: str
+    :param message: message contents
+    :type message: Mapping[str, Union[str, int]]
+    :return: validation result
+    :rtype: bool
+    """
     return set(message.keys()).issuperset(MSG_FIELDS[msg_type])
 
 
 async def route_message(client: str, msg: Mapping[str, Union[str, int]]) -> None:
+    """Validate and route message to appropriate handler.
+
+    :param client: client ID
+    :type client: str
+    :param msg: received message
+    :type msg: Mapping[str, Union[str, int]]
+    :raises MessageRoutingError: if message is of unknown type
+    :raises MessageFormatError: if message fields do not match spec
+    """
     msg_type = msg.pop('type', None)
     if not msg_type or msg_type not in KNOWN_MSG_TYPES:
         raise MessageRoutingError('Unknown message type')
