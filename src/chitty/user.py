@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import time
 from dataclasses import dataclass, field
 from typing import List, Mapping, Optional
 
@@ -32,6 +34,14 @@ class User:
             'client_id': self.client_id,
             'name': self.name,
         }
+
+    async def post_message(self, topic: str, message: str) -> None:
+        payload = {
+            'date': time.time(),
+            'from': self.to_map(),
+            'message': message,
+        }
+        await redis().publish(topic, json.dumps(payload))
 
 
 class UserRegistry:

@@ -1,6 +1,7 @@
 from typing import Mapping, Optional, Union
 
 from . import handlers
+from .errors import MessageFormatError, MessageRoutingError
 
 MSG_TYPE_REGISTER = 'reg'
 MSG_TYPE_CREATE_TOPIC = 'topic'
@@ -32,19 +33,8 @@ MSG_FIELDS = {
 
 MSG_HANDLERS = {
     MSG_TYPE_REGISTER: handlers.register_user,
+    MSG_TYPE_MESSAGE: handlers.post_message,
 }
-
-
-class ChatMessageException(Exception):
-    pass
-
-
-class MessageRoutingError(ChatMessageException):
-    pass
-
-
-class MessageFormatError(ChatMessageException):
-    pass
 
 
 def validate_message(msg_type: str, message: Mapping[str, Union[str, int]]) -> bool:
