@@ -85,6 +85,14 @@ class User:
         }
         await redis().publish(topic, json.dumps(payload))
 
+    async def post_direct_message(self, message: Message) -> None:
+        """Send direct message to another user.
+
+        :param message: message structure
+        :type message: Message
+        """
+        await redis().publish(message.topic, json.dumps(message.message))
+
     async def collect_message(self) -> Message:
         """Fetch single message from subscribed topic pool.
 

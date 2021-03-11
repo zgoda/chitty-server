@@ -26,6 +26,7 @@ MSG_HANDLERS = {
     MSG_TYPE_REGISTER: handlers.register_user,
     MSG_TYPE_MESSAGE: handlers.post_message,
     MSG_TYPE_SUBSCRIBE_TOPIC: handlers.subscribe,
+    MSG_TYPE_DIRECT_MESSAGE: handlers.direct_message,
 }
 
 

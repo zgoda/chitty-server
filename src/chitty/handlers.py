@@ -11,6 +11,7 @@ import nanoid
 import trio
 
 from . import errors, utils
+from .message import make_message
 from .user import User, registry
 
 
@@ -69,3 +70,25 @@ async def subscribe(client: str, *, value: str) -> Optional[dict]:
         return utils.error_response(errors.E_REASON_NOTREG)
     user.subscribe(value)
     await trio.sleep(0)
+
+
+async def direct_message(client: str, *, to: str, value: str) -> None:
+    """Send direct message to another user.
+
+    :param client: client ID
+    :type client: str
+    :param to: recipient user ID (key)
+    :type to: str
+    :param value: message
+    :type value: str
+    """
+    sender = registry.get(client_id=client)
+    if not sender:
+        return utils.error_response(errors.E_REASON_NOTREG)
+    recipient = registry.get(key=to)
+    if not recipient:
+        return utils.error_response(
+            errors.E_REASON_NOTREG, message='Recipient not found'
+        )
+    message = make_message(user_data=sender.to_map(), topic=recipient.key, msg=value)
+    await sender.post_direct_message(message)
