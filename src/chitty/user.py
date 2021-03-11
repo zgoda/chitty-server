@@ -96,18 +96,42 @@ class User:
 
 
 class UserRegistry:
+    """Simple user/client registry.
+
+    For now it stores all user/client records locally in dicts.
+    """
 
     def __init__(self):
         self._users_by_client = {}
         self._users_by_key = {}
 
-    def add(self, user: User):
+    def add(self, user: User) -> None:
+        """Add user to registry.
+
+        Adding already registered user overwrites previous instance.
+
+        :param user: user object
+        :type user: User
+        """
         self._users_by_client[user.client_id] = user
         self._users_by_key[user.key] = user
 
     def get(
                 self, *, client_id: Optional[str] = None, key: Optional[str] = None
             ) -> Optional[User]:
+        """Retrieve user object from registry.
+
+        Lookup can be done either by client ID or by user identifier (key). At
+        least one of these values is required.
+
+        :param client_id: client ID from WebSocker request, defaults to None
+        :type client_id: Optional[str], optional
+        :param key: user ID (key), defaults to None
+        :type key: Optional[str], optional
+        :raises RuntimeError: if neither ID or key is provided
+        :return: user object or None if not found
+        :rtype: Optional[User]
+        """
         if not any([client_id, key]):
             raise RuntimeError('Either client_id or key must be provided')
         if key:
@@ -121,6 +145,17 @@ class UserRegistry:
     def remove(
                 self, *, client_id: Optional[str] = None, key: Optional[str] = None
             ) -> None:
+        """Remove user from registry.
+
+        Lookup can be done either by client ID or by user identifier (key). At
+        least one of these values is required.
+
+        :param client_id: client ID from WebSocker request, defaults to None
+        :type client_id: Optional[str], optional
+        :param key: user ID (key), defaults to None
+        :type key: Optional[str], optional
+        :raises RuntimeError: if neither ID or key is provided
+        """
         if not any([client_id, key]):
             raise RuntimeError('Either client_id or key must be provided')
         if key:
