@@ -1,6 +1,9 @@
 import json
+import trio
 
-from trio_websocket import ConnectionClosed, WebSocketRequest, serve_websocket
+from trio_websocket import (
+    ConnectionClosed, WebSocketConnection, WebSocketRequest, serve_websocket,
+)
 
 from . import errors
 from .controller import route_message
@@ -11,17 +14,16 @@ MAX_MESSAGE_SIZE = 2 ** 16  # 64 KB
 MESSAGE_QUEUE_SIZE = 4
 
 
-async def server(request: WebSocketRequest) -> None:
-    """Connection handler.
+async def ws_message_processor(ws: WebSocketConnection, client: str) -> None:
+    """Task that reads and routes messages from WebSocket connection.
 
-    This function will be run for any incoming connection.
-
-    :param request: websocket request object
-    :type request: WebSocketRequest
+    :param ws: WebSocket connection object
+    :type ws: WebSocketConnection
+    :param client: client ID from request
+    :type client: str
     """
-    ws = await request.accept()
-    client = str(request.remote)
     while True:
+        await trio.sleep(0)
         try:
             message = await ws.get_message()
             try:
@@ -36,16 +38,49 @@ async def server(request: WebSocketRequest) -> None:
                 resp = await route_message(client, payload)
                 if resp:
                     await ws.send_message(json.dumps(resp))
-            user = registry.get(client_id=client)
-            if user:
-                topic, message = await user.collect_message()
-                message['topic'] = topic
-                await ws.send_message(json.dumps(message))
-            print('end loop run')
         except ConnectionClosed:
             registry.remove(client_id=client)
-            print(f'bye {client}')
             break
+
+
+async def chat_message_processor(ws: WebSocketConnection, client: str) -> None:
+    """Task that collects messages from chat topic and sends them to WebSocket
+    client.
+
+    :param ws: WebSocket connection object
+    :type ws: WebSocketConnection
+    :param client: client ID from request
+    :type client: str
+    """
+    while True:
+        await trio.sleep(0)
+        if ws.closed:
+            registry.remove(client_id=client)
+            break
+        user = registry.get(client_id=client)
+        if user:
+            topic, message = await user.collect_message()
+            message['topic'] = topic
+            try:
+                await ws.send_message(json.dumps(message))
+            except ConnectionClosed:
+                registry.remove(client_id=client)
+                break
+
+
+async def server(request: WebSocketRequest) -> None:
+    """Connection handler.
+
+    This function will be run for any incoming connection.
+
+    :param request: websocket request object
+    :type request: WebSocketRequest
+    """
+    ws = await request.accept()
+    client = str(request.remote)
+    async with trio.open_nursery() as nursery:
+        nursery.start_soon(ws_message_processor, ws, client)
+        nursery.start_soon(chat_message_processor, ws, client)
 
 
 async def main(*, host: str, port: int) -> None:
