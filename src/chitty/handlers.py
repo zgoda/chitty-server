@@ -13,10 +13,11 @@ from . import utils, errors
 from .user import User, registry
 
 
-async def register_user(client: str, *, value: str) -> Mapping[str, str]:
+async def register_user(client: str, *, value: str, **kw) -> Mapping[str, str]:
     """Register client instance as both client (the agent) and user.
 
-    This function returns user data structure.
+    This function returns user data structure. If key is not provided it will
+    be generated.
 
     :param client: client ID
     :type client: str
@@ -25,7 +26,8 @@ async def register_user(client: str, *, value: str) -> Mapping[str, str]:
     :return: user data
     :rtype: Mapping[str, str]
     """
-    user = User(name=value, client_id=client, key=nanoid.generate())
+    key = kw.pop('key', nanoid.generate())
+    user = User(name=value, client_id=client, key=key)
     registry.add(user)
     return user.to_map()
 

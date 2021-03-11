@@ -59,10 +59,11 @@ async def chat_message_processor(ws: WebSocketConnection, client: str) -> None:
             break
         user = registry.get(client_id=client)
         if user:
-            topic, message = await user.collect_message()
-            message['topic'] = topic
+            message = await user.collect_message()
+            payload = message.message
+            payload['topic'] = message.topic
             try:
-                await ws.send_message(json.dumps(message))
+                await ws.send_message(json.dumps(payload))
             except ConnectionClosed:
                 registry.remove(client_id=client)
                 break
