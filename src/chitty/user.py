@@ -59,6 +59,14 @@ class User:
             'name': self.name,
         }
 
+    def subscribe(self, topic: str) -> None:
+        """Subscribe specific topic.
+
+        :param topic: topic name
+        :type topic: str
+        """
+        self._pubsub.subscribe(topic)
+
     async def post_message(self, topic: str, message: str) -> None:
         """Post chat message to a topic.
 
