@@ -80,7 +80,7 @@ class User:
     async def collect_message(self) -> Message:
         """Fetch single message from subscribed topic pool.
 
-        :return: tuple of topic name and message structure
+        :return: topic name and message structure as named tuple
         :rtype: Message
         """
         topic, message = await self._pubsub
