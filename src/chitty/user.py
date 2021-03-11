@@ -3,11 +3,12 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass, field
-from typing import List, Mapping, Optional
+from typing import Mapping, Optional
 
 from redio.pubsub import PubSub
 
 from .storage import redis
+from .topic import DEFAULT_TOPICS
 
 
 @dataclass
@@ -18,11 +19,9 @@ class User:
 
     _pubsub: Optional[PubSub] = field(init=False, repr=False, default=None)
     _events: Optional[str] = field(init=False, repr=False, default=None)
-    _subs: List[str] = field(default_factory=list, init=False, repr=False)
 
     def __post_init__(self):
-        self._pubsub = redis.pubsub(self.client_id).autodecode.with_channel
-        self._events = self._pubsub.subscribe(self.key)
+        self._pubsub = redis.pubsub(self.key, *DEFAULT_TOPICS).autodecode.with_channel
 
     @classmethod
     def from_map(cls, data: Mapping[str, str]) -> User:
@@ -36,12 +35,16 @@ class User:
         }
 
     async def post_message(self, topic: str, message: str) -> None:
+        self._pubsub.subscribe(topic)
         payload = {
             'date': time.time(),
             'from': self.to_map(),
             'message': message,
         }
         await redis().publish(topic, json.dumps(payload))
+
+    async def collect_message(self):
+        return await self._pubsub
 
 
 class UserRegistry:
