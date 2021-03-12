@@ -23,7 +23,6 @@ async def ws_message_processor(ws: WebSocketConnection, client: str) -> None:
     :type client: str
     """
     while True:
-        await trio.sleep(0)
         try:
             message = await ws.get_message()
             try:
