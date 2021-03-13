@@ -1,6 +1,25 @@
 import time
 from collections import namedtuple
 
+MSG_TYPE_REGISTER = 'reg'
+MSG_TYPE_SUBSCRIBE_TOPIC = 'sub'
+MSG_TYPE_DIRECT_MESSAGE = 'dm'
+MSG_TYPE_MESSAGE = 'msg'
+
+KNOWN_MSG_TYPES = [
+    MSG_TYPE_REGISTER,
+    MSG_TYPE_SUBSCRIBE_TOPIC,
+    MSG_TYPE_DIRECT_MESSAGE,
+    MSG_TYPE_MESSAGE,
+]
+
+MSG_FIELDS = {
+    MSG_TYPE_REGISTER: ['value'],
+    MSG_TYPE_SUBSCRIBE_TOPIC: ['value'],
+    MSG_TYPE_DIRECT_MESSAGE: ['to', 'value'],
+    MSG_TYPE_MESSAGE: ['to', 'value'],
+}
+
 Message = namedtuple('Message', ['topic', 'message'])
 
 

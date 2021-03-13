@@ -11,7 +11,7 @@ import nanoid
 import trio
 
 from . import errors, utils
-from .message import make_message
+from .message import MSG_TYPE_REGISTER, make_message
 from .user import User, registry
 
 
@@ -31,7 +31,9 @@ async def register_user(client: str, *, value: str, **kw) -> Mapping[str, str]:
     key = kw.pop('key', nanoid.generate())
     user = User(name=value, client_id=client, key=key)
     registry.add(user)
-    return user.to_map()
+    payload = user.to_map()
+    payload['type'] = MSG_TYPE_REGISTER
+    return payload
 
 
 async def post_message(client: str, *, to: str, value: str) -> Optional[dict]:

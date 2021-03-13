@@ -1,6 +1,6 @@
 import json
-import trio
 
+import trio
 from trio_websocket import (
     ConnectionClosed, WebSocketConnection, WebSocketRequest, serve_websocket,
 )

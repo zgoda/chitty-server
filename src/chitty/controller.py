@@ -2,25 +2,10 @@ from typing import Mapping, Optional, Union
 
 from . import handlers
 from .errors import MessageFormatError, MessageRoutingError
-
-MSG_TYPE_REGISTER = 'reg'
-MSG_TYPE_SUBSCRIBE_TOPIC = 'sub'
-MSG_TYPE_DIRECT_MESSAGE = 'dm'
-MSG_TYPE_MESSAGE = 'msg'
-
-KNOWN_MSG_TYPES = [
-    MSG_TYPE_REGISTER,
-    MSG_TYPE_SUBSCRIBE_TOPIC,
-    MSG_TYPE_DIRECT_MESSAGE,
-    MSG_TYPE_MESSAGE,
-]
-
-MSG_FIELDS = {
-    MSG_TYPE_REGISTER: ['value'],
-    MSG_TYPE_SUBSCRIBE_TOPIC: ['value'],
-    MSG_TYPE_DIRECT_MESSAGE: ['to', 'value'],
-    MSG_TYPE_MESSAGE: ['to', 'value'],
-}
+from .message import (
+    KNOWN_MSG_TYPES, MSG_FIELDS, MSG_TYPE_DIRECT_MESSAGE, MSG_TYPE_MESSAGE,
+    MSG_TYPE_REGISTER, MSG_TYPE_SUBSCRIBE_TOPIC,
+)
 
 MSG_HANDLERS = {
     MSG_TYPE_REGISTER: handlers.register_user,
