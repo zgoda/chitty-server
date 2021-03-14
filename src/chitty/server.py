@@ -52,20 +52,21 @@ async def chat_message_processor(ws: WebSocketConnection, client: str) -> None:
     :type client: str
     """
     while True:
-        await trio.sleep(0)
         if ws.closed:
             registry.remove(client_id=client)
             break
         user = registry.get(client_id=client)
         if user:
-            message = await user.collect_message()
-            payload = message.message
-            payload['topic'] = message.topic
-            try:
-                await ws.send_message(json.dumps(payload))
-            except ConnectionClosed:
-                registry.remove(client_id=client)
-                break
+            async for message in user.message_stream():
+                payload = message.message
+                payload['topic'] = message.topic
+                try:
+                    await ws.send_message(json.dumps(payload))
+                except ConnectionClosed:
+                    registry.remove(client_id=client)
+                    break
+        else:
+            await trio.sleep(0.2)
 
 
 async def server(request: WebSocketRequest) -> None:

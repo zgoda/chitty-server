@@ -15,13 +15,18 @@ MSG_HANDLERS = {
 }
 
 
-def validate_message(msg_type: str, message: Mapping[str, Union[str, int]]) -> bool:
+def validate_message(
+            msg_type: str, message: Mapping[str, Union[str, int, float]]
+        ) -> bool:
     """Validate message structure.
+
+    This function returns False if message is missing any required field,
+    True otherwise.
 
     :param msg_type: type of message
     :type msg_type: str
     :param message: message contents
-    :type message: Mapping[str, Union[str, int]]
+    :type message: Mapping[str, Union[str, int, float]]
     :return: validation result
     :rtype: bool
     """

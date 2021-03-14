@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass, field
-from typing import Mapping, Optional
+from typing import Generator, Mapping, Optional
 
 from redio.pubsub import PubSub
 
@@ -93,14 +93,15 @@ class User:
         """
         await redis().publish(message.topic, json.dumps(message.message))
 
-    async def collect_message(self) -> Message:
-        """Fetch single message from subscribed topic pool.
+    async def message_stream(self) -> Generator[Message, None, None]:
+        """Generator that yields Message objects as they come to pubsub
+        receiver.
 
-        :return: topic name and message structure as named tuple
-        :rtype: Message
+        :yield: received message and topic wrapped in Message object
+        :rtype: Generator[Message, None, None]
         """
-        topic, message = await self._pubsub
-        return Message(topic, message)
+        async for topic, message in self._pubsub:
+            yield Message(topic, message)
 
 
 class UserRegistry:
