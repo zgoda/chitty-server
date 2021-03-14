@@ -3,6 +3,8 @@ from trio.lowlevel import Task
 
 
 class TaskLogger(Instrument):
+    """Simple instrumentation object that traces Trio task execution.
+    """
 
     def task_scheduled(self, task: Task):
         print(f'task scheduled: {task.name}')
