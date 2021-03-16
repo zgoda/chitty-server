@@ -11,7 +11,7 @@ import nanoid
 import trio
 
 from . import errors, utils
-from .message import MSG_TYPE_REGISTER, make_message
+from .message import MSG_TYPE_REGISTER, MSG_TYPE_SUBSCRIBE_TOPIC, make_message
 from .user import User, registry
 
 
@@ -31,7 +31,7 @@ async def register_user(client: str, *, value: str, **kw) -> Mapping[str, str]:
     key = kw.pop('key', nanoid.generate())
     user = User(name=value, client_id=client, key=key)
     registry.add(user)
-    payload = user.to_map()
+    payload = user.to_map(with_topics=True)
     payload['type'] = MSG_TYPE_REGISTER
     return payload
 
@@ -72,6 +72,9 @@ async def subscribe(client: str, *, value: str) -> Optional[dict]:
         return utils.error_response(errors.E_REASON_NOTREG)
     user.subscribe(value)
     await trio.sleep(0)
+    payload = user.to_map(with_topics=True)
+    payload['type'] = MSG_TYPE_SUBSCRIBE_TOPIC
+    return payload
 
 
 async def direct_message(client: str, *, to: str, value: str) -> None:

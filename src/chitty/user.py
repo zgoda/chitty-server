@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass, field
-from typing import Generator, Mapping, Optional
+from typing import Generator, List, Mapping, Optional
 
 from redio.pubsub import PubSub
 
@@ -31,10 +31,13 @@ class User:
     client_id: str
     key: str
 
+    _topics: List[str] = field(init=False, repr=False, default_factory=list)
     _pubsub: Optional[PubSub] = field(init=False, repr=False, default=None)
 
     def __post_init__(self):
         self._pubsub = redis.pubsub(self.key, *DEFAULT_TOPICS).autodecode.with_channel
+        self._topics = list(DEFAULT_TOPICS)
+        self._topics.append(self.key)
 
     @classmethod
     def from_map(cls, data: Mapping[str, str]) -> User:
@@ -47,17 +50,23 @@ class User:
         """
         return cls(**data)
 
-    def to_map(self) -> Mapping[str, str]:
+    def to_map(self, with_topics: bool = False) -> Mapping[str, str]:
         """Serialise User object into data dictionary.
 
+        :param with_topics: flag whether list of subscribed topics should be
+                            returned along with basic data, defaults to False
+        :type with_topics: bool, optional
         :return: serialised data
         :rtype: Mapping[str, str]
         """
-        return {
+        data = {
             'key': self.key,
             'client_id': self.client_id,
             'name': self.name,
         }
+        if with_topics:
+            data['topics'] = list(self._topics)
+        return data
 
     def subscribe(self, topic: str) -> None:
         """Subscribe specific topic.
@@ -66,6 +75,7 @@ class User:
         :type topic: str
         """
         self._pubsub.subscribe(topic)
+        self._topics.append(topic)
 
     async def post_message(self, topic: str, message: str) -> None:
         """Post chat message to a topic.
