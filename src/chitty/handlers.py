@@ -5,6 +5,7 @@ arguments required by message spec. Anything that is returned from this
 function will be serialised and then sent back to client as response.
 """
 
+import logging
 from typing import Mapping, Optional
 
 import nanoid
@@ -13,6 +14,8 @@ import trio
 from . import errors, utils
 from .message import MSG_TYPE_REGISTER, MSG_TYPE_SUBSCRIBE_TOPIC, make_message
 from .user import User, registry
+
+log = logging.getLogger(__name__)
 
 
 async def register_user(client: str, *, value: str, **kw) -> Mapping[str, str]:
@@ -33,6 +36,7 @@ async def register_user(client: str, *, value: str, **kw) -> Mapping[str, str]:
     registry.add(user)
     payload = user.to_map(with_topics=True)
     payload['type'] = MSG_TYPE_REGISTER
+    log.debug(f'user {value} registered')
     return payload
 
 
@@ -53,8 +57,10 @@ async def post_message(client: str, *, to: str, value: str) -> Optional[dict]:
     """
     user = registry.get(client_id=client)
     if not user:
+        log.warning(f'client from space: {client}')
         return utils.error_response(errors.E_REASON_NOTREG)
     await user.post_message(to, value)
+    log.debug(f'{client} posted message to {to}')
 
 
 async def subscribe(client: str, *, value: str) -> Optional[dict]:
@@ -69,11 +75,13 @@ async def subscribe(client: str, *, value: str) -> Optional[dict]:
     """
     user = registry.get(client_id=client)
     if not user:
+        log.warning(f'client from space: {client}')
         return utils.error_response(errors.E_REASON_NOTREG)
     user.subscribe(value)
     await trio.sleep(0)
     payload = user.to_map(with_topics=True)
     payload['type'] = MSG_TYPE_SUBSCRIBE_TOPIC
+    log.debug(f'{client} subscribed to {value}')
     return payload
 
 
@@ -89,11 +97,14 @@ async def direct_message(client: str, *, to: str, value: str) -> None:
     """
     sender = registry.get(client_id=client)
     if not sender:
+        log.warning(f'client from space: {client}')
         return utils.error_response(errors.E_REASON_NOTREG)
     recipient = registry.get(key=to)
     if not recipient:
+        log.warning(f'recipient {to} not found')
         return utils.error_response(
             errors.E_REASON_NOTREG, message='Recipient not found'
         )
     message = make_message(user_data=sender.to_map(), topic=recipient.key, msg=value)
     await sender.post_direct_message(message)
+    log.debug(f'direct message from {client} to {to} sent')

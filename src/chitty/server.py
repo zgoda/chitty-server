@@ -1,4 +1,6 @@
 import json
+import logging
+import os
 
 import trio
 from trio_websocket import (
@@ -12,6 +14,13 @@ from .utils import error_response
 
 MAX_MESSAGE_SIZE = 2 ** 16  # 64 KB
 MESSAGE_QUEUE_SIZE = 4
+
+log = logging.getLogger(__name__)
+
+
+def _post_close_cleanup(client: str):
+    registry.remove(client_id=client)
+    logging.warning(f'client connection for {client} closed')
 
 
 async def ws_message_processor(ws: WebSocketConnection, client: str) -> None:
@@ -32,13 +41,18 @@ async def ws_message_processor(ws: WebSocketConnection, client: str) -> None:
                     errors.E_REASON_MALFORMED,
                     message='Invalid message, expected: object',
                 )
+                log.exception('malformed message')
                 await ws.send_message(json.dumps(payload))
             else:
-                resp = await route_message(client, payload)
-                if resp:
-                    await ws.send_message(json.dumps(resp))
+                try:
+                    resp = await route_message(client, payload)
+                    log.debug('message processed')
+                    if resp:
+                        await ws.send_message(json.dumps(resp))
+                except (errors.ChatMessageException, KeyError):
+                    log.exception('message routing error')
         except ConnectionClosed:
-            registry.remove(client_id=client)
+            _post_close_cleanup(client)
             break
 
 
@@ -53,7 +67,7 @@ async def chat_message_processor(ws: WebSocketConnection, client: str) -> None:
     """
     while True:
         if ws.closed:
-            registry.remove(client_id=client)
+            _post_close_cleanup(client)
             break
         user = registry.get(client_id=client)
         if user:
@@ -62,8 +76,9 @@ async def chat_message_processor(ws: WebSocketConnection, client: str) -> None:
                 payload['topic'] = message.topic
                 try:
                     await ws.send_message(json.dumps(payload))
+                    log.debug('message sent')
                 except ConnectionClosed:
-                    registry.remove(client_id=client)
+                    _post_close_cleanup(client)
                     break
         else:
             await trio.sleep(0.2)
@@ -79,6 +94,7 @@ async def server(request: WebSocketRequest) -> None:
     """
     ws = await request.accept()
     client = str(request.remote)
+    log.debug(f'connection from {client} accepted')
     async with trio.open_nursery() as nursery:
         nursery.start_soon(ws_message_processor, ws, client)
         nursery.start_soon(chat_message_processor, ws, client)
@@ -92,6 +108,8 @@ async def main(*, host: str, port: int) -> None:
     :param port: TCP port
     :type port: int
     """
+    logging.basicConfig(level=os.getenv('CHITTY_LOGLEVEL', 'INFO'))
+    log.info(f'starting on {host}:{port}')
     await serve_websocket(
         server, host=host, port=port, ssl_context=None,
         max_message_size=MAX_MESSAGE_SIZE, message_queue_size=MESSAGE_QUEUE_SIZE,
