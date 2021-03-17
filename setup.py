@@ -31,6 +31,8 @@ test_reqs = [
     'pytest',
     'pytest-cov',
     'pytest-trio',
+    'pytest-mock',
+    'hypothesis',
 ]
 
 docs_reqs = [
