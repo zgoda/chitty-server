@@ -112,5 +112,5 @@ async def direct_message(client: str, *, to: str, value: str) -> None:
             errors.E_REASON_NOTREG, message='Recipient not found'
         )
     message = make_message(user_data=sender.to_map(), topic=recipient.key, msg=value)
-    await sender.post_direct_message(message)
+    await message.publish()
     log.debug(f'direct message from {client} to {to} sent')

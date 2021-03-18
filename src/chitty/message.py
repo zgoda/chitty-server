@@ -1,5 +1,9 @@
+import json
 import time
-from collections import namedtuple
+from dataclasses import dataclass
+from typing import Mapping, Union
+
+from .storage import redis
 
 MSG_TYPE_REGISTER = 'reg'
 MSG_TYPE_SUBSCRIBE_TOPIC = 'sub'
@@ -20,7 +24,24 @@ MSG_FIELDS = {
     MSG_TYPE_MESSAGE: ['to', 'value'],
 }
 
-Message = namedtuple('Message', ['topic', 'message'])
+
+@dataclass
+class Message:
+    """Message object that can be published.
+
+    :ivar topic: topic where message will be published
+    :type topic: str
+    :ivar payload: message payload as serialisable structure
+    :type payload: Mapping[str, Union[str, float, Mapping[str, str]]]
+    """
+
+    topic: str
+    payload: Mapping[str, Union[str, float, Mapping[str, str]]]
+
+    async def publish(self):
+        """Publish message to Redis PubSub channel (topic).
+        """
+        await redis().publish(self.topic, json.dumps(self.payload))
 
 
 def make_message(user_data: dict, topic: str, msg: str, **extra) -> Message:
@@ -34,7 +55,7 @@ def make_message(user_data: dict, topic: str, msg: str, **extra) -> Message:
     :type topic: str
     :param msg: message text
     :type msg: str
-    :return: message structure as named tuple
+    :return: message object
     :rtype: Message
     """
     payload = {
@@ -43,4 +64,4 @@ def make_message(user_data: dict, topic: str, msg: str, **extra) -> Message:
         'date': time.time(),
     }
     payload.update(extra)
-    return Message(topic, payload)
+    return Message(topic=topic, payload=payload)

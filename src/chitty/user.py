@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import json
-import time
 from dataclasses import dataclass, field
 from typing import Generator, List, Mapping, Optional
 
 from redio.pubsub import PubSub
 
 from . import event
-from .message import Message
+from .message import Message, make_message
 from .storage import redis
 from .topic import DEFAULT_TOPICS
 
@@ -86,7 +84,8 @@ class User:
     async def post_message(self, topic: str, message: str) -> None:
         """Post chat message to a topic.
 
-        This also subscribes user to topic.
+        This also subscribes user to the topic. If topic does not yet exists,
+        it gets created.
 
         :param topic: topic name
         :type topic: str
@@ -94,21 +93,9 @@ class User:
         :type message: str
         """
         self._pubsub.subscribe(topic)
-        payload = {
-            'date': time.time(),
-            'from': self.to_map(),
-            'message': message,
-        }
-        await redis().publish(topic, json.dumps(payload))
+        msg_obj = make_message(self.to_map(), topic, message)
+        await msg_obj.publish()
         await event.new_topic_created(topic)
-
-    async def post_direct_message(self, message: Message) -> None:
-        """Send direct message to another user.
-
-        :param message: message structure
-        :type message: Message
-        """
-        await redis().publish(message.topic, json.dumps(message.message))
 
     async def message_stream(self) -> Generator[Message, None, None]:
         """Generator that yields Message objects as they come to pubsub
@@ -118,7 +105,7 @@ class User:
         :rtype: Generator[Message, None, None]
         """
         async for topic, message in self._pubsub:
-            yield Message(topic, message)
+            yield Message(topic=topic, payload=message)
 
 
 class UserRegistry:
