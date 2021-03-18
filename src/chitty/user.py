@@ -7,6 +7,7 @@ from typing import Generator, List, Mapping, Optional
 
 from redio.pubsub import PubSub
 
+from . import event
 from .message import Message
 from .storage import redis
 from .topic import DEFAULT_TOPICS
@@ -16,8 +17,8 @@ from .topic import DEFAULT_TOPICS
 class User:
     """User object structure.
 
-    Upon object creation user will be subscribed to private topic and general
-    chat.
+    Upon object creation user will be subscribed to private topic, general
+    chat and all system topics.
 
     :ivar name: user screen name
     :type name: str
@@ -36,6 +37,7 @@ class User:
 
     def __post_init__(self):
         self._pubsub = redis.pubsub(self.key, *DEFAULT_TOPICS).autodecode.with_channel
+        self._pubsub.psubscribe('sys:*')
         self._topics = list(DEFAULT_TOPICS)
         self._topics.append(self.key)
 
@@ -68,14 +70,18 @@ class User:
             data['topics'] = list(self._topics)
         return data
 
-    def subscribe(self, topic: str) -> None:
-        """Subscribe specific topic.
+    async def subscribe(self, topic: str) -> None:
+        """Subscribe to specified topic.
+
+        This effectively creates new topic and this is being broadcast to
+        events channel.
 
         :param topic: topic name
         :type topic: str
         """
         self._pubsub.subscribe(topic)
         self._topics.append(topic)
+        await event.new_topic_created(topic)
 
     async def post_message(self, topic: str, message: str) -> None:
         """Post chat message to a topic.
@@ -94,6 +100,7 @@ class User:
             'message': message,
         }
         await redis().publish(topic, json.dumps(payload))
+        await event.new_topic_created(topic)
 
     async def post_direct_message(self, message: Message) -> None:
         """Send direct message to another user.

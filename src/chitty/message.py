@@ -23,8 +23,10 @@ MSG_FIELDS = {
 Message = namedtuple('Message', ['topic', 'message'])
 
 
-def make_message(user_data: dict, topic: str, msg: str) -> Message:
+def make_message(user_data: dict, topic: str, msg: str, **extra) -> Message:
     """Build chat message structure.
+
+    Any extra data passed in kwargs will be added to message payload.
 
     :param user_data: serialised user data
     :type user_data: dict
@@ -40,4 +42,5 @@ def make_message(user_data: dict, topic: str, msg: str) -> Message:
         'message': msg,
         'date': time.time(),
     }
+    payload.update(extra)
     return Message(topic, payload)

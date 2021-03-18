@@ -11,7 +11,7 @@ from typing import Mapping, Optional
 import nanoid
 import trio
 
-from . import errors, utils
+from . import errors, topic, utils
 from .message import MSG_TYPE_REGISTER, MSG_TYPE_SUBSCRIBE_TOPIC, make_message
 from .user import User, registry
 
@@ -59,6 +59,12 @@ async def post_message(client: str, *, to: str, value: str) -> Optional[dict]:
     if not user:
         log.warning(f'client from space: {client}')
         return utils.error_response(errors.E_REASON_NOTREG)
+    if to in topic.SYSTEM_TOPICS:
+        log.warning(f'client {client} tries to post to system topic')
+        return utils.error_response(
+            errors.E_REASON_TOPIC_SYSTEM,
+            message=f'Topic {to} is not available for posting',
+        )
     await user.post_message(to, value)
     log.debug(f'{client} posted message to {to}')
 
