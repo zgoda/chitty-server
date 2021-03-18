@@ -76,10 +76,8 @@ async def chat_message_processor(ws: WebSocketConnection, client: str) -> None:
         user = registry.get(client_id=client)
         if user:
             async for message in user.message_stream():
-                payload = message.message
-                payload['topic'] = message.topic
                 try:
-                    await ws.send_message(json.dumps(payload))
+                    await ws.send_message(json.dumps(message.payload))
                     log.debug('message sent')
                 except ConnectionClosed:
                     _post_close_cleanup(client)

@@ -62,6 +62,7 @@ def make_message(user_data: dict, topic: str, msg: str, **extra) -> Message:
         'from': user_data,
         'message': msg,
         'date': time.time(),
+        'topic': topic,
     }
     payload.update(extra)
     return Message(topic=topic, payload=payload)
