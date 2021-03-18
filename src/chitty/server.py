@@ -49,8 +49,12 @@ async def ws_message_processor(ws: WebSocketConnection, client: str) -> None:
                     log.debug('message processed')
                     if resp:
                         await ws.send_message(json.dumps(resp))
-                except (errors.ChatMessageException, KeyError):
+                except errors.ChatMessageException as e:
+                    payload = error_response(
+                        errors.E_REASON_TYPE_INVALID, message=str(e)
+                    )
                     log.exception('message routing error')
+                    await ws.send_message(json.dumps(payload))
         except ConnectionClosed:
             _post_close_cleanup(client)
             break
