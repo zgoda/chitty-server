@@ -56,7 +56,7 @@ class Message:
         :param ws: websocket client connection
         :type ws: WebSocketConnection
         """
-        ws.send_message(self.serialised_payload)
+        await ws.send_message(self.serialised_payload)
 
 
 def make_message(user_data: dict, topic: str, msg: str, **extra) -> Message:
