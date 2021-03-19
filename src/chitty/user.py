@@ -95,7 +95,8 @@ class User:
         self._pubsub.subscribe(topic)
         msg_obj = make_message(self.to_map(), topic, message)
         await msg_obj.publish()
-        await event.new_topic_created(topic)
+        if topic not in DEFAULT_TOPICS and topic != self.key:
+            await event.new_topic_created(topic)
 
     async def message_stream(self) -> Generator[Message, None, None]:
         """Generator that yields Message objects as they come to pubsub
