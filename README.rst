@@ -12,3 +12,5 @@ Web application: `Preact <https://preactjs.com/>`_ PWA
 Educational project so don't expect much.
 
 This repo contains backend code.
+
+The code requires at least Python 3.8 (``functools.cached_property`` decorator).

@@ -1,7 +1,10 @@
 import json
 import time
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Mapping, Union
+
+from trio_websocket import WebSocketConnection
 
 from .storage import redis
 
@@ -38,10 +41,22 @@ class Message:
     topic: str
     payload: Mapping[str, Union[str, float, Mapping[str, str]]]
 
-    async def publish(self):
+    @cached_property
+    def serialised_payload(self):
+        return json.dumps(self.payload)
+
+    async def publish(self) -> None:
         """Publish message to Redis PubSub channel (topic).
         """
-        await redis().publish(self.topic, json.dumps(self.payload))
+        await redis().publish(self.topic, self.serialised_payload)
+
+    async def send(self, ws: WebSocketConnection) -> None:
+        """Send message to websocket client connection.
+
+        :param ws: websocket client connection
+        :type ws: WebSocketConnection
+        """
+        ws.send_message(self.serialised_payload)
 
 
 def make_message(user_data: dict, topic: str, msg: str, **extra) -> Message:

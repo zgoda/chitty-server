@@ -81,7 +81,6 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python :: 3 :: Only',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Topic :: Communications :: Chat',
@@ -97,5 +96,5 @@ setup(
             'chitty=chitty.cli:run',
         ]
     },
-    python_requires='~=3.7',
+    python_requires='~=3.8',
 )
