@@ -12,14 +12,21 @@ from .controller import route_message
 from .user import registry
 from .utils import error_response
 
+MAX_CLIENTS = int(os.getenv('WS_MAX_CLIENTS', '16'))
+
 MAX_MESSAGE_SIZE = 2 ** 16  # 64 KB
 MESSAGE_QUEUE_SIZE = 4
 
 log = logging.getLogger(__name__)
 
+STATS = {
+    'num_clients': 0,
+}
+
 
 def _post_close_cleanup(client: str):
     registry.remove(client_id=client)
+    STATS['num_clients'] -= 1
     logging.warning(f'client connection for {client} closed')
 
 
@@ -89,13 +96,22 @@ async def chat_message_processor(ws: WebSocketConnection, client: str) -> None:
 async def server(request: WebSocketRequest) -> None:
     """Connection handler.
 
-    This function will be run for any incoming connection.
+    This function will be run for any incoming connection. Request is accepted
+    unless number of open connections exceeds ``MAX_CLIENTS``, rejection comes
+    with code 403.
 
     :param request: websocket request object
     :type request: WebSocketRequest
     """
-    ws = await request.accept()
     client = str(request.remote)
+    if STATS['num_clients'] >= MAX_CLIENTS:
+        await request.reject(403)
+        log.warning(
+            f'Maximum number of clients reached, request from {client} rejected'
+        )
+        return
+    ws = await request.accept()
+    STATS['num_clients'] += 1
     log.debug(f'connection from {client} accepted')
     async with trio.open_nursery() as nursery:
         nursery.start_soon(ws_message_processor, ws, client)
