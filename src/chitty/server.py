@@ -132,3 +132,19 @@ async def main(*, host: str, port: int) -> None:
         server, host=host, port=port, ssl_context=None,
         max_message_size=MAX_MESSAGE_SIZE, message_queue_size=MESSAGE_QUEUE_SIZE,
     )
+    # this does not work yet...
+    """
+    task_status = trio.TASK_STATUS_IGNORED
+    async with trio.open_nursery() as nursery:
+        config = hypercorn.Config.from_mapping(
+            bind=[f'{host}:{port + 1}'],
+            # Log to stdout
+            accesslog='-',
+            errorlog='-',
+            # Setting this just silences a warning:
+            worker_class='trio',
+        )
+        urls = await nursery.start(hypercorn.trio.serve, QuartTrio(__name__), config)
+        log.info('Accepting HTTP requests at:', urls)
+        task_status.started(urls)
+    """
