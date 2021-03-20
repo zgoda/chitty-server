@@ -7,14 +7,17 @@ from . import debug, server
 
 
 def parse_args() -> Namespace:
-    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
+    parser_kw = {'formatter_class': ArgumentDefaultsHelpFormatter}
+    parser = ArgumentParser()
+    subparsers = parser.add_subparsers(help='Available commands')
+    run_parser = subparsers.add_parser('run', help='Launch the server', **parser_kw)
+    run_parser.add_argument(
         '-H', '--host', default='127.0.0.1', help='IP address to bind tos'
     )
-    parser.add_argument(
+    run_parser.add_argument(
         '-p', '--port', type=int, default=5000, help='Port number to bind to'
     )
-    parser.add_argument(
+    run_parser.add_argument(
         '-i', '--instrument',
         help='[optional] name of instrumentation class from debug module',
     )
