@@ -1,4 +1,4 @@
-from .message import make_message
+from .message import MSG_TYPE_EVENT, make_message
 from .storage import redis
 from .topic import EVENTS_TOPIC
 
@@ -16,8 +16,9 @@ async def new_topic_created(topic: str) -> None:
     """
     topics_num = await redis().sadd('topics', topic)
     if topics_num:
+        kw = {'type': MSG_TYPE_EVENT}
         message = make_message(
             SYS_USER_DATA, EVENTS_TOPIC, f'New topic open: {topic}',
-            topic_name=topic,
+            topic_name=topic, **kw,
         )
         await message.publish()

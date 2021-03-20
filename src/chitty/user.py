@@ -6,7 +6,7 @@ from typing import Generator, List, Mapping, Optional
 from redio.pubsub import PubSub
 
 from . import event
-from .message import Message, make_message
+from .message import MSG_TYPE_MESSAGE, Message, make_message
 from .storage import redis
 from .topic import DEFAULT_TOPICS
 
@@ -93,7 +93,8 @@ class User:
         :type message: str
         """
         self._pubsub.subscribe(topic)
-        msg_obj = make_message(self.to_map(), topic, message)
+        kw = {'type': MSG_TYPE_MESSAGE}
+        msg_obj = make_message(self.to_map(), topic, message, **kw)
         await msg_obj.publish()
         if topic not in DEFAULT_TOPICS and topic != self.key:
             await event.new_topic_created(topic)
