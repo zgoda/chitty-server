@@ -27,6 +27,9 @@ base_reqs = [
     'nanoid',
     'hypercorn',
     'quart-trio',
+    'passlib[argon2]',
+    'trio-parallel',
+    'python-dotenv',
 ]
 
 test_reqs = [

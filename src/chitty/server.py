@@ -5,12 +5,11 @@ from functools import partial
 
 import hypercorn
 import trio
-from quart_trio import QuartTrio
 from trio_websocket import (
     ConnectionClosed, WebSocketConnection, WebSocketRequest, serve_websocket,
 )
 
-from . import errors
+from . import errors, web
 from .controller import route_message
 from .user import registry
 from .utils import error_response
@@ -145,7 +144,7 @@ async def main(*, host: str, port: int, debug: bool) -> None:
             worker_class='trio',
         )
         config.use_reloader = debug
-        urls = await nursery.start(hypercorn.trio.serve, QuartTrio(__name__), config)
+        urls = await nursery.start(hypercorn.trio.serve, web.app, config)
         log.info(f'accepting HTTP requests at {host}:{web_port}')
         web_task_status.started(urls)
         # launch websocket server
