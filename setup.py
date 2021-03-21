@@ -28,7 +28,6 @@ base_reqs = [
     'hypercorn',
     'quart-trio',
     'passlib[argon2]',
-    'trio-parallel',
     'python-dotenv',
 ]
 
@@ -48,6 +47,7 @@ docs_reqs = [
 dev_reqs = [
     'ipython',
     'ipdb',
+    'httpie',
     'wheel',
     'flake8',
     'flake8-builtins',
