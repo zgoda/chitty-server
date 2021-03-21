@@ -4,8 +4,6 @@ from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 import trio
 from dotenv import find_dotenv, load_dotenv
 
-from . import debug, server
-
 
 def parse_args() -> Namespace:
     parser_kw = {'formatter_class': ArgumentDefaultsHelpFormatter}
@@ -30,6 +28,7 @@ def parse_args() -> Namespace:
 
 def run() -> None:
     load_dotenv(find_dotenv())
+    from . import debug, server
     opts = parse_args()
     kw = {}
     if opts.instrument:

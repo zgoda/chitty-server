@@ -144,9 +144,9 @@ async def main(*, host: str, port: int, debug: bool) -> None:
             worker_class='trio',
         )
         config.use_reloader = debug
-        urls = await nursery.start(hypercorn.trio.serve, web.app, config)
+        www = await nursery.start(hypercorn.trio.serve, web.app, config)
         log.info(f'accepting HTTP requests at {host}:{web_port}')
-        web_task_status.started(urls)
+        web_task_status.started(www)
         # launch websocket server
         ws_task_status = trio.TASK_STATUS_IGNORED
         ws_server = partial(
