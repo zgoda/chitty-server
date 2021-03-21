@@ -1,15 +1,13 @@
 import json
 import logging
 import os
-from functools import partial
 
-import hypercorn
 import trio
 from trio_websocket import (
     ConnectionClosed, WebSocketConnection, WebSocketRequest, serve_websocket,
 )
 
-from . import errors, web
+from . import errors
 from .controller import route_message
 from .user import registry
 from .utils import error_response
@@ -120,39 +118,17 @@ async def server(request: WebSocketRequest) -> None:
         nursery.start_soon(chat_message_processor, ws, client)
 
 
-async def main(*, host: str, port: int, debug: bool) -> None:
+async def main(*, host: str, port: int) -> None:
     """Websocket server entrypoint.
 
     :param host: host name or IP address to bind to
     :type host: str
     :param port: TCP port
     :type port: int
-    :param debug: flag to turn on Hypercorn dev mode
-    :type debug: bool
     """
     logging.basicConfig(level=os.getenv('CHITTY_LOGLEVEL', 'INFO'))
-    web_port = port + 1
-    async with trio.open_nursery() as nursery:
-        # launch web interface
-        web_task_status = trio.TASK_STATUS_IGNORED
-        config = hypercorn.Config.from_mapping(
-            bind=[f'{host}:{web_port}'],
-            # Log to stdout
-            accesslog='-',
-            errorlog='-',
-            # Setting this just silences a warning:
-            worker_class='trio',
-        )
-        config.use_reloader = debug
-        www = await nursery.start(hypercorn.trio.serve, web.app, config)
-        log.info(f'accepting HTTP requests at {host}:{web_port}')
-        web_task_status.started(www)
-        # launch websocket server
-        ws_task_status = trio.TASK_STATUS_IGNORED
-        ws_server = partial(
-            serve_websocket, host=host, port=port, ssl_context=None,
-            max_message_size=MAX_MESSAGE_SIZE, message_queue_size=MESSAGE_QUEUE_SIZE,
-        )
-        ws = await nursery.start(ws_server, server)
-        log.info(f'accepting websocket requests at {host}:{port}')
-        ws_task_status.started(ws)
+    log.info(f'starting on {host}:{port}')
+    await serve_websocket(
+        server, host=host, port=port, ssl_context=None,
+        max_message_size=MAX_MESSAGE_SIZE, message_queue_size=MESSAGE_QUEUE_SIZE,
+    )
