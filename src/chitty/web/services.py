@@ -14,12 +14,19 @@ class Storage:
     KEY_USERS = 'sys:users'
     KEY_LOGINS = 'sys:logins'
 
-    def __init__(self, host: Optional[str] = None, port: Optional[int] = None):
+    def __init__(
+                self, host: Optional[str] = None, port: Optional[int] = None,
+                database: Optional[int] = None,
+            ):
         if host is None:
             host = '127.0.0.1'
         if port is None:
             port = 6379
-        self.redis = redis.Redis(host=host, port=port, db=0, decode_responses=True)
+        if database is None:
+            database = 0
+        self.redis = redis.Redis(
+            host=host, port=port, db=database, decode_responses=True
+        )
 
     def user_exists(self, name: str) -> bool:
         return self.redis.hexists(self.KEY_USERS, name)
