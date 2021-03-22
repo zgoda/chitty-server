@@ -1,8 +1,7 @@
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
 
+from dotenv import find_dotenv, load_dotenv
 from werkzeug import run_simple
-
-from .app import application
 
 
 def parse_args() -> Namespace:
@@ -20,5 +19,7 @@ def parse_args() -> Namespace:
 
 
 def main():
+    load_dotenv(find_dotenv())
+    from .app import application
     opts = parse_args()
     run_simple(opts.host, opts.port, application, use_reloader=True, use_debugger=False)

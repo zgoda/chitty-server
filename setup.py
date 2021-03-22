@@ -28,6 +28,7 @@ base_reqs = [
     'falcon',
     'redis[hiredis]',
     'passlib[argon2]',
+    'itsdangerous',
     'python-dotenv',
 ]
 
