@@ -3,7 +3,7 @@ from typing import Mapping, Optional, Union
 
 def error_response(
             reason: str, message: Optional[str] = None
-        ) -> Mapping[str, Union[str, dict]]:
+        ) -> Mapping[str, Union[str, Mapping[str, str]]]:
     """Build error response structure.
 
     :param reason: error reason
@@ -11,7 +11,7 @@ def error_response(
     :param message: error message, defaults to None
     :type message: Optional[str], optional
     :return: error response structure
-    :rtype: Mapping[str, Union[str, dict]]
+    :rtype: Mapping[str, Union[str, Mapping[str, str]]]
     """
     return {
         'status': 'error',

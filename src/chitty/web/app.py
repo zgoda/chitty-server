@@ -28,4 +28,5 @@ class App(falcon.API):
         self.add_route('/login', _resources['login'])
 
 
-application = App()
+def make_app() -> App:
+    return App()

@@ -20,6 +20,7 @@ def parse_args() -> Namespace:
 
 def main():
     load_dotenv(find_dotenv())
-    from .app import application
+    from .app import make_app
+    application = make_app()
     opts = parse_args()
     run_simple(opts.host, opts.port, application, use_reloader=True, use_debugger=False)
