@@ -1,7 +1,10 @@
 import json
 import time
 from dataclasses import dataclass
-from functools import cached_property
+try:
+    from functools import cached_property
+except ImportError:
+    from werkzeug.utils import cached_property
 from typing import Mapping, Union
 
 from trio_websocket import WebSocketConnection

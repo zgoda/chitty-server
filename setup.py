@@ -30,6 +30,7 @@ base_reqs = [
     'passlib[argon2]',
     'itsdangerous',
     'python-dotenv',
+    'werkzeug ; python_version<"3.8"',
 ]
 
 test_reqs = [
@@ -88,6 +89,7 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Topic :: Communications :: Chat',
@@ -104,5 +106,5 @@ setup(
             'web=chitty.web.cli:main',
         ]
     },
-    python_requires='~=3.8',
+    python_requires='~=3.7',
 )
