@@ -25,8 +25,8 @@ base_reqs = [
     'trio-websocket',
     'redio',
     'nanoid',
-    'hypercorn',
-    'quart-trio',
+    'falcon',
+    'redis[hiredis]',
     'passlib[argon2]',
     'python-dotenv',
 ]
@@ -45,6 +45,7 @@ docs_reqs = [
 ]
 
 dev_reqs = [
+    'werkzeug[watchdog]',
     'ipython',
     'ipdb',
     'httpie',
@@ -99,6 +100,7 @@ setup(
     entry_points={
         'console_scripts': [
             'chitty=chitty.cli:run',
+            'web=chitty.web.cli:main',
         ]
     },
     python_requires='~=3.8',

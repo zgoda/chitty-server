@@ -7,11 +7,11 @@ from . import debug, server
 
 def parse_args() -> Namespace:
     parser_kw = {'formatter_class': ArgumentDefaultsHelpFormatter}
-    parser = ArgumentParser(description='Chitty char server management')
+    parser = ArgumentParser(description='Chitty chat server management')
     subparsers = parser.add_subparsers(help='Available commands')
     run_parser = subparsers.add_parser('run', help='Launch the server', **parser_kw)
     run_parser.add_argument(
-        '-H', '--host', default='127.0.0.1', help='IP address to bind tos'
+        '-H', '--host', default='127.0.0.1', help='IP address to bind to'
     )
     run_parser.add_argument(
         '-p', '--port', type=int, default=5000, help='port number to bind to'
