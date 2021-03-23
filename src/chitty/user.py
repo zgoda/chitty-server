@@ -61,7 +61,7 @@ class User:
         """
         data = {
             'key': self.key,
-            'client_id': self.client_id,
+            'clientId': self.client_id,
             'name': self.name,
         }
         if with_topics:
