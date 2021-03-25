@@ -1,7 +1,10 @@
+import os
+
 import falcon
 
+from .auth import UserLoginResource, UserRegistrationResource
+from .middleware import cors
 from .services import Storage, UserPoolManager
-from .auth import UserRegistrationResource, UserLoginResource
 
 _resources = {}
 
@@ -9,6 +12,14 @@ _resources = {}
 class App(falcon.API):
 
     def __init__(self, *args, **kw):
+        env = os.getenv('CHITTY_ENV', 'production')
+        if env == 'development':
+            middlewares = kw.setdefault('middleware', [])
+            try:
+                iter(middlewares)
+            except TypeError:
+                middlewares = [middlewares]
+            middlewares.append(cors)
         super().__init__(*args, **kw)
         self.storage = Storage()
         self.user_mgr = UserPoolManager(self.storage)
