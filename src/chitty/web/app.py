@@ -15,9 +15,7 @@ class App(falcon.API):
         env = os.getenv('CHITTY_ENV', 'production')
         if env == 'development':
             middlewares = kw.setdefault('middleware', [])
-            try:
-                iter(middlewares)
-            except TypeError:
+            if isinstance(middlewares, str):
                 middlewares = [middlewares]
             middlewares.append(cors)
         super().__init__(*args, **kw)
