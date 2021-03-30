@@ -23,7 +23,6 @@ class App(falcon.API):
         super().__init__(*args, **kw)
         self.storage = Storage()
         self.user_mgr = UserPoolManager(self.storage)
-        self.init_resources()
         self.register_routes()
 
     def init_resources(self):
@@ -35,6 +34,7 @@ class App(falcon.API):
             _resources['login'] = UserLoginResource(self.user_mgr)
 
     def register_routes(self):
+        self.init_resources()
         self.add_route('/register', _resources['register'])
         self.add_route('/login', _resources['login'])
 

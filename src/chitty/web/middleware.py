@@ -1,3 +1,8 @@
+from typing import Any
+
+from falcon import Request, Response
+
+
 class CORSMiddleware:
     """Extremely simple CORS middleware that allows everything from
     everywhere.
@@ -5,7 +10,9 @@ class CORSMiddleware:
     Do not use except for development.
     """
 
-    def process_response(self, req, resp, resource, req_succeeded):
+    def process_response(
+                self, req: Request, resp: Response, resource: Any, req_succeeded: bool
+            ) -> None:
         resp.set_header('Access-Control-Allow-Origin', '*')
 
         if (
