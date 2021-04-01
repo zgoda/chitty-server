@@ -44,7 +44,9 @@ class Storage:
 class UserPoolManager:
 
     _serializer = itsdangerous.URLSafeTimedSerializer(
-        os.environ['CHITTY_SECRET_KEY'], signer_kwargs={'digest_method': hashlib.sha512}
+        secret_key=os.environ['CHITTY_SECRET_KEY'],
+        salt='auth',
+        signer_kwargs={'digest_method': hashlib.sha512},
     )
     _pw_ctx = CryptContext(schemes=['argon2'])
 
@@ -52,6 +54,18 @@ class UserPoolManager:
         self.db = db
 
     def create_user(self, name: str, password: str) -> str:
+        """Create user account.
+
+        Upon succesful account creation an authentication token is returned.
+
+        :param name: user name
+        :type name: str
+        :param password: user password
+        :type password: str
+        :raises errors.UserExists: if specified name is already taken
+        :return: authentication token
+        :rtype: str
+        """
         if self.db.user_exists(name):
             raise errors.UserExists('user already exists')
         secret = self._pw_ctx.hash(password)
@@ -61,6 +75,19 @@ class UserPoolManager:
         return token
 
     def login(self, name: str, password: str) -> str:
+        """Login user.
+
+        Upon succesful login an authentication token is returned.
+
+        :param name: user name
+        :type name: str
+        :param password: user password
+        :type password: str
+        :raises errors.UserNotFound: if account does not exist or provided
+                                     credentials are invalid
+        :return: authentication token
+        :rtype: str
+        """
         secret = self.db.get_password(name)
         if not secret:
             raise errors.UserNotFound('user does not exist')
