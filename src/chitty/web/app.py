@@ -3,21 +3,17 @@ import os
 import falcon
 
 from .auth import UserLoginResource, UserRegistrationResource
-from .middleware import cors
 from .services import Storage, UserPoolManager
 
 _resources = {}
 
 
-class App(falcon.API):
+class App(falcon.App):
 
     def __init__(self, *args, **kw):
         env = os.getenv('CHITTY_ENV', 'production')
         if env == 'development':
-            middlewares = kw.setdefault('middleware', [])
-            if isinstance(middlewares, str):
-                middlewares = [middlewares]
-            middlewares.append(cors)
+            kw.setdefault('cors_enable', True)
         super().__init__(*args, **kw)
         self.storage = Storage()
         self.user_mgr = UserPoolManager(self.storage)
