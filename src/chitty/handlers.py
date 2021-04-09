@@ -69,6 +69,15 @@ async def post_message(client: str, *, to: str, value: str) -> Optional[dict]:
     log.debug(f'{client} posted message to {to}')
 
 
+async def post_reply_message(
+            client: str, *, to: str, value: str, replying_to: Mapping[str, str]
+        ) -> Optional[dict]:
+    ret = await post_message(client, to=to, value=value)
+    in_reply_to = replying_to['key']
+    log.debug(f'{client} posted reply message to {in_reply_to} in {to}')
+    return ret
+
+
 async def subscribe(client: str, *, value: str) -> Optional[dict]:
     """Subscribe user to specified topic.
 

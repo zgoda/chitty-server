@@ -15,6 +15,7 @@ MSG_TYPE_REGISTER = 'reg'
 MSG_TYPE_SUBSCRIBE_TOPIC = 'sub'
 MSG_TYPE_DIRECT_MESSAGE = 'dm'
 MSG_TYPE_MESSAGE = 'msg'
+MSG_TYPE_REPLY = 'reply'
 MSG_TYPE_EVENT = 'event'
 
 KNOWN_MSG_TYPES = [
@@ -22,6 +23,7 @@ KNOWN_MSG_TYPES = [
     MSG_TYPE_SUBSCRIBE_TOPIC,
     MSG_TYPE_DIRECT_MESSAGE,
     MSG_TYPE_MESSAGE,
+    MSG_TYPE_REPLY,
 ]
 
 MSG_FIELDS = {
@@ -29,6 +31,7 @@ MSG_FIELDS = {
     MSG_TYPE_SUBSCRIBE_TOPIC: ['value'],
     MSG_TYPE_DIRECT_MESSAGE: ['to', 'value'],
     MSG_TYPE_MESSAGE: ['to', 'value'],
+    MSG_TYPE_REPLY: ['to', 'value', 'replyingTo']
 }
 
 

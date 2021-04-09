@@ -4,12 +4,13 @@ from . import handlers
 from .errors import MessageFormatError, MessageRoutingError
 from .message import (
     KNOWN_MSG_TYPES, MSG_FIELDS, MSG_TYPE_DIRECT_MESSAGE, MSG_TYPE_MESSAGE,
-    MSG_TYPE_REGISTER, MSG_TYPE_SUBSCRIBE_TOPIC,
+    MSG_TYPE_REGISTER, MSG_TYPE_REPLY, MSG_TYPE_SUBSCRIBE_TOPIC,
 )
 
 MSG_HANDLERS = {
     MSG_TYPE_REGISTER: handlers.register_user,
     MSG_TYPE_MESSAGE: handlers.post_message,
+    MSG_TYPE_REPLY: handlers.post_reply_message,
     MSG_TYPE_SUBSCRIBE_TOPIC: handlers.subscribe,
     MSG_TYPE_DIRECT_MESSAGE: handlers.direct_message,
 }
@@ -33,6 +34,18 @@ def validate_message(
     return set(message.keys()).issuperset(MSG_FIELDS[msg_type])
 
 
+def normalise_message_fields(message):
+    invalid = {'replyingTo'}
+    subst = {
+        'replyingTo': 'replying_to',
+    }
+    to_subst = set(message.keys()).intersection(invalid)
+    for key in to_subst:
+        new_key = subst[key]
+        message[new_key] = message[key]
+        del message[key]
+
+
 async def route_message(
             client: str, msg: Mapping[str, Union[str, int]]
         ) -> Optional[dict]:
@@ -52,5 +65,6 @@ async def route_message(
         raise MessageRoutingError('Unknown message type')
     if not validate_message(msg_type, msg):
         raise MessageFormatError('Invalid message format')
+    normalise_message_fields(msg)
     handler = MSG_HANDLERS[msg_type]
     return await handler(client, **msg)
