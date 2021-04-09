@@ -13,7 +13,7 @@ import trio
 
 from . import errors, topic, utils
 from .message import MSG_TYPE_REGISTER, MSG_TYPE_SUBSCRIBE_TOPIC, make_message
-from .user import User, registry
+from .user import SYS_USER_DATA, User, registry
 
 log = logging.getLogger(__name__)
 
@@ -73,9 +73,13 @@ async def post_reply_message(
             client: str, *, to: str, value: str, replying_to: Mapping[str, str]
         ) -> Optional[dict]:
     ret = await post_message(client, to=to, value=value)
+    if ret:
+        return ret
     in_reply_to = replying_to['key']
-    log.debug(f'{client} posted reply message to {in_reply_to} in {to}')
-    return ret
+    msg = make_message(
+        user_data=SYS_USER_DATA, topic=in_reply_to, msg="You've got reply"
+    )
+    await msg.publish()
 
 
 async def subscribe(client: str, *, value: str) -> Optional[dict]:

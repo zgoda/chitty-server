@@ -11,6 +11,9 @@ from .storage import redis
 from .topic import DEFAULT_TOPICS
 
 
+SYS_USER_DATA = {k: 'server' for k in ['key', 'client_id', 'name']}
+
+
 @dataclass
 class User:
     """User object structure.

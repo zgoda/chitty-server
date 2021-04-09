@@ -1,8 +1,7 @@
 from .message import MSG_TYPE_EVENT, make_message
 from .storage import redis
 from .topic import EVENTS_TOPIC
-
-SYS_USER_DATA = {k: 'server' for k in ['key', 'client_id', 'name']}
+from .user import SYS_USER_DATA
 
 
 async def new_topic_created(topic: str) -> None:
