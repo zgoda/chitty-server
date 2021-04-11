@@ -1,27 +1,21 @@
-import hashlib
-import os
+import time
 from typing import Optional
 
-import itsdangerous
 import redis
-from passlib.context import CryptContext
 
+from .. import keys
+from ..services.auth import password_context, serializer
 from . import errors
 
 
 class Storage:
 
-    KEY_USERS = 'sys:users'
-    KEY_LOGINS = 'sys:logins'
-
     def __init__(
                 self, host: Optional[str] = None, port: Optional[int] = None,
                 database: Optional[int] = None,
             ):
-        if host is None:
-            host = '127.0.0.1'
-        if port is None:
-            port = 6379
+        host = host or '127.0.0.1'
+        port = port or 6379
         if database is None:
             database = 0
         self.redis = redis.Redis(
@@ -29,29 +23,36 @@ class Storage:
         )
 
     def user_exists(self, name: str) -> bool:
-        return self.redis.hexists(self.KEY_USERS, name)
+        key = f'{keys.USERS}:{name}'
+        return self.redis.exists(key)
 
     def add_user(self, name: str, password: str) -> None:
-        self.redis.hset(self.KEY_USERS, name, password)
+        key = f'{keys.USERS}:{name}'
+        self.redis.hset(key, mapping={'name': name, 'password': password})
 
-    def set_user_token(self, name: str, token: str) -> None:
-        self.redis.hset(self.KEY_LOGINS, name, token)
+    def set_auth_token(self, name: str, token: str) -> None:
+        key = f'{keys.LOGINS}:{name}'
+        self.redis.hset(key, mapping={'token': token, 'date': time.time()})
 
     def get_password(self, name: str) -> Optional[str]:
-        return self.redis.hget(self.KEY_USERS, name)
+        key = f'{keys.USERS}:{name}'
+        return self.redis.hget(key, 'password')
 
 
 class UserPoolManager:
 
-    _serializer = itsdangerous.URLSafeTimedSerializer(
-        secret_key=os.environ['CHITTY_SECRET_KEY'],
-        salt='auth',
-        signer_kwargs={'digest_method': hashlib.sha512},
-    )
-    _pw_ctx = CryptContext(schemes=['argon2'])
-
     def __init__(self, db: Storage):
         self.db = db
+
+    def user_exists(self, name: str) -> bool:
+        """Check if user (name) exists in db.
+
+        :param name: user name
+        :type name: str
+        :return: True if exists, False if not
+        :rtype: bool
+        """
+        return self.db.user_exists(name)
 
     def create_user(self, name: str, password: str) -> str:
         """Create user account.
@@ -68,10 +69,10 @@ class UserPoolManager:
         """
         if self.db.user_exists(name):
             raise errors.UserExists('user already exists')
-        secret = self._pw_ctx.hash(password)
+        secret = password_context.hash(password)
         self.db.add_user(name, secret)
-        token = self._serializer.dumps(name)
-        self.db.set_user_token(name, token)
+        token = serializer.dumps(name)
+        self.db.set_auth_token(name, token)
         return token
 
     def login(self, name: str, password: str) -> str:
@@ -91,8 +92,8 @@ class UserPoolManager:
         secret = self.db.get_password(name)
         if not secret:
             raise errors.UserNotFound('user does not exist')
-        if not self._pw_ctx.verify(password, secret):
+        if not password_context.verify(password, secret):
             raise errors.UserNotFound('invalid password')
-        token = self._serializer.dumps(name)
-        self.db.set_user_token(name, token)
+        token = serializer.dumps(name)
+        self.db.set_auth_token(name, token)
         return token

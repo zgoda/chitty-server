@@ -105,10 +105,14 @@ async def server(request: WebSocketRequest) -> None:
     """
     client = str(request.remote)
     if STATS['num_clients'] >= MAX_CLIENTS:
-        await request.reject(403)
+        await request.reject(503)
         log.warning(
             f'Maximum number of clients reached, request from {client} rejected'
         )
+        return
+    if len(request.path) < 2:
+        await request.reject(401, body='Please authenticate first'.encode('utf-8'))
+        log.warning(f'Client {client} not authenticated')
         return
     ws = await request.accept()
     STATS['num_clients'] += 1

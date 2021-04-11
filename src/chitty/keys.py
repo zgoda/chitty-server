@@ -1,0 +1,2 @@
+USERS = 'users'
+LOGINS = 'logins'

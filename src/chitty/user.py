@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Generator, List, Mapping, Optional
+from typing import Generator, Mapping, Optional
 
 from redio.pubsub import PubSub
 
@@ -33,13 +33,13 @@ class User:
     client_id: str
     key: str
 
-    _topics: List[str] = field(init=False, repr=False, default_factory=list)
+    _topics: set[str] = field(init=False, repr=False, default_factory=set)
     _pubsub: Optional[PubSub] = field(init=False, repr=False, default=None)
 
     def __post_init__(self):
         self._pubsub = redis.pubsub(self.key, *DEFAULT_TOPICS).autodecode.with_channel
         self._pubsub.psubscribe('sys:*')
-        self._topics = list(DEFAULT_TOPICS)
+        self._topics = set(DEFAULT_TOPICS)
         self._topics.append(self.key)
 
     @classmethod
@@ -74,15 +74,16 @@ class User:
     async def subscribe(self, topic: str) -> None:
         """Subscribe to specified topic.
 
-        This effectively creates new topic and this is being broadcast to
-        events channel.
+        If the topic does not exist this creates new topic and broadcast new
+        topic created event.
 
         :param topic: topic name
         :type topic: str
         """
         self._pubsub.subscribe(topic)
-        self._topics.append(topic)
-        await event.new_topic_created(topic)
+        if topic not in self._topics:
+            await event.new_topic_created(topic)
+        self._topics.add(topic)
 
     async def post_message(self, topic: str, message: str) -> None:
         """Post chat message to a topic.
@@ -99,7 +100,8 @@ class User:
         kw = {'type': MSG_TYPE_MESSAGE}
         msg_obj = make_message(self.to_map(), topic, message, **kw)
         await msg_obj.publish()
-        if topic not in DEFAULT_TOPICS and topic != self.key:
+        if topic not in self._topics and topic != self.key:
+            self._topics.add(topic)
             await event.new_topic_created(topic)
 
     async def message_stream(self) -> Generator[Message, None, None]:
