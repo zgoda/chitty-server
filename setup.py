@@ -30,7 +30,7 @@ base_reqs = [
     'passlib[argon2]',
     'itsdangerous',
     'python-dotenv',
-    'werkzeug ; python_version<"3.8"',
+    'cached-property ; python_version<"3.8"',
 ]
 
 test_reqs = [

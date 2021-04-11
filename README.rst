@@ -18,4 +18,4 @@ Requirements
 
 The code requires at least Python 3.7.
 
-On Python < 3.8 ``cached_property`` `decorator <https://docs.python.org/3.8/library/functools.html#functools.cached_property>`_ is polyfilled from `Werkzeug <https://werkzeug.palletsprojects.com/en/1.0.x/utils/#werkzeug.utils.cached_property>`_.
+On Python < 3.8 ``cached_property`` `decorator <https://docs.python.org/3.8/library/functools.html#functools.cached_property>`_ is polyfilled from `cached-property package <https://pypi.org/project/cached-property/>`_.

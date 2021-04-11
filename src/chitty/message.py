@@ -4,7 +4,7 @@ from dataclasses import dataclass
 try:
     from functools import cached_property
 except ImportError:
-    from werkzeug.utils import cached_property
+    from cached_property import cached_property
 from typing import Mapping, Union
 
 from trio_websocket import WebSocketConnection
