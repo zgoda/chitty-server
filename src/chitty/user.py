@@ -1,17 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Generator, Mapping, Optional
 
 from redio.pubsub import PubSub
 
-from . import event
+from . import event, keys
 from .message import MSG_TYPE_MESSAGE, Message, make_message
 from .storage import redis
 from .topic import DEFAULT_TOPICS
-
-
-SYS_USER_DATA = {k: 'server' for k in ['key', 'client_id', 'name']}
 
 
 @dataclass
@@ -21,7 +19,7 @@ class User:
     Upon object creation user will be subscribed to private topic, general
     chat and all system topics.
 
-    :ivar name: user screen name
+    :ivar name: user ID
     :type name: str
     :ivar client_id: WS client ID from request
     :type client_id: str
@@ -30,17 +28,32 @@ class User:
     """
 
     name: str
-    client_id: str
-    key: str
+    created: Optional[datetime] = None
 
     _topics: set[str] = field(init=False, repr=False, default_factory=set)
     _pubsub: Optional[PubSub] = field(init=False, repr=False, default=None)
 
     def __post_init__(self):
-        self._pubsub = redis.pubsub(self.key, *DEFAULT_TOPICS).autodecode.with_channel
+        self._pubsub = redis.pubsub(self.name, *DEFAULT_TOPICS).autodecode.with_channel
         self._pubsub.psubscribe('sys:*')
         self._topics = set(DEFAULT_TOPICS)
-        self._topics.append(self.key)
+        self._topics.append(self.name)
+
+    @classmethod
+    async def find(cls, name: str) -> Optional[User]:
+        key = f'{keys.USERS}:{name}'
+        data = await redis().hgetall(key)
+        if data:
+            data.pop('password', None)
+            data['created'] = datetime.fromtimestamp(
+                float(data['created']), tz=timezone.utc
+            )
+            user = cls(**data)
+            key = f'{keys.TOPICS}:{name}'
+            user_topics = await redis().smembers(key)
+            for topic in user_topics:
+                user.subscribe(topic)
+            return user
 
     @classmethod
     def from_map(cls, data: Mapping[str, str]) -> User:
@@ -63,9 +76,8 @@ class User:
         :rtype: Mapping[str, str]
         """
         data = {
-            'key': self.key,
-            'clientId': self.client_id,
             'name': self.name,
+            'created': self.created.timestamp()
         }
         if with_topics:
             data['topics'] = list(self._topics)
@@ -81,9 +93,13 @@ class User:
         :type topic: str
         """
         self._pubsub.subscribe(topic)
-        if topic not in self._topics:
+        topics = await redis().smembers(keys.TOPICS)
+        if topic not in topics:
+            await redis().sadd(keys.TOPICS, topic)
             await event.new_topic_created(topic)
         self._topics.add(topic)
+        key = f'{keys.TOPICS}:{self.name}'
+        await redis().sadd(key, topic)
 
     async def post_message(self, topic: str, message: str) -> None:
         """Post chat message to a topic.
@@ -100,8 +116,13 @@ class User:
         kw = {'type': MSG_TYPE_MESSAGE}
         msg_obj = make_message(self.to_map(), topic, message, **kw)
         await msg_obj.publish()
-        if topic not in self._topics and topic != self.key:
+        if topic not in self._topics and topic != self.name:
             self._topics.add(topic)
+            key = f'{keys.TOPICS}:{self.name}'
+            await redis().sadd(key, topic)
+        topics = await redis().smembers(keys.TOPICS)
+        if topic != self.name and topic not in topics:
+            await redis().sadd(keys.TOPICS, topic)
             await event.new_topic_created(topic)
 
     async def message_stream(self) -> Generator[Message, None, None]:
@@ -117,13 +138,10 @@ class User:
 
 class UserRegistry:
     """Simple user/client registry.
-
-    For now it stores all user/client records locally in dicts.
     """
 
     def __init__(self):
-        self._users_by_client = {}
-        self._users_by_key = {}
+        self._users = {}
 
     def add(self, user: User) -> None:
         """Add user to registry.
@@ -133,58 +151,25 @@ class UserRegistry:
         :param user: user object
         :type user: User
         """
-        self._users_by_client[user.client_id] = user
-        self._users_by_key[user.key] = user
+        self._users[user.name] = user
 
-    def get(
-                self, *, client_id: Optional[str] = None, key: Optional[str] = None
-            ) -> Optional[User]:
+    def get(self, name: str) -> Optional[User]:
         """Retrieve user object from registry.
 
-        Lookup can be done either by client ID or by user identifier (key). At
-        least one of these values is required.
-
-        :param client_id: client ID from WebSocker request, defaults to None
-        :type client_id: Optional[str], optional
-        :param key: user ID (key), defaults to None
-        :type key: Optional[str], optional
-        :raises RuntimeError: if neither ID or key is provided
+        :param name: user ID
+        :type name: str
         :return: user object or None if not found
         :rtype: Optional[User]
         """
-        if not any([client_id, key]):
-            raise RuntimeError('Either client_id or key must be provided')
-        if key:
-            selector = key
-            users = self._users_by_key
-        else:
-            selector = client_id
-            users = self._users_by_client
-        return users.get(selector)
+        return self._users.get(name)
 
-    def remove(
-                self, *, client_id: Optional[str] = None, key: Optional[str] = None
-            ) -> None:
+    def remove(self, name: str) -> None:
         """Remove user from registry.
 
-        Lookup can be done either by client ID or by user identifier (key). At
-        least one of these values is required.
-
-        :param client_id: client ID from WebSocker request, defaults to None
-        :type client_id: Optional[str], optional
-        :param key: user ID (key), defaults to None
-        :type key: Optional[str], optional
-        :raises RuntimeError: if neither ID or key is provided
+        :param name: user ID
+        :type name: str
         """
-        if not any([client_id, key]):
-            raise RuntimeError('Either client_id or key must be provided')
-        if key:
-            user = self._users_by_key.get(key)
-        else:
-            user = self._users_by_client.get(client_id)
-        if user:
-            self._users_by_key.pop(user.key, None)
-            self._users_by_client.pop(user.client_id, None)
+        self._users.pop(name, None)
 
 
 registry = UserRegistry()

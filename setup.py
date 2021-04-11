@@ -24,7 +24,6 @@ base_reqs = [
     'trio',
     'trio-websocket',
     'redio',
-    'nanoid',
     'falcon',
     'redis[hiredis]',
     'passlib[argon2]',

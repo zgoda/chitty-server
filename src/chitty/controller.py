@@ -4,11 +4,11 @@ from . import handlers
 from .errors import MessageFormatError, MessageRoutingError
 from .message import (
     KNOWN_MSG_TYPES, MSG_FIELDS, MSG_TYPE_DIRECT_MESSAGE, MSG_TYPE_MESSAGE,
-    MSG_TYPE_REGISTER, MSG_TYPE_REPLY, MSG_TYPE_SUBSCRIBE_TOPIC,
+    MSG_TYPE_REPLY, MSG_TYPE_SUBSCRIBE_TOPIC,
 )
+from .user import User
 
 MSG_HANDLERS = {
-    MSG_TYPE_REGISTER: handlers.register_user,
     MSG_TYPE_MESSAGE: handlers.post_message,
     MSG_TYPE_REPLY: handlers.post_reply_message,
     MSG_TYPE_SUBSCRIBE_TOPIC: handlers.subscribe,
@@ -47,7 +47,7 @@ def normalise_message_fields(message):
 
 
 async def route_message(
-            client: str, msg: Mapping[str, Union[str, int]]
+            user: User, msg: Mapping[str, Union[str, int]]
         ) -> Optional[dict]:
     """Validate and route message to appropriate handler.
 
@@ -67,4 +67,4 @@ async def route_message(
         raise MessageFormatError('Invalid message format')
     normalise_message_fields(msg)
     handler = MSG_HANDLERS[msg_type]
-    return await handler(client, **msg)
+    return await handler(user, **msg)

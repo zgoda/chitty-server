@@ -28,7 +28,12 @@ class Storage:
 
     def add_user(self, name: str, password: str) -> None:
         key = f'{keys.USERS}:{name}'
-        self.redis.hset(key, mapping={'name': name, 'password': password})
+        data = {
+            'name': name,
+            'password': password,
+            'created': time.time(),
+        }
+        self.redis.hset(key, mapping=data)
 
     def set_auth_token(self, name: str, token: str) -> None:
         key = f'{keys.LOGINS}:{name}'

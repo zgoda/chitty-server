@@ -9,7 +9,8 @@ from trio_websocket import (
 
 from . import errors
 from .controller import route_message
-from .user import registry
+from .services.auth import check_token, ResultType
+from .user import registry, User
 from .utils import error_response
 
 MAX_CLIENTS = int(os.getenv('WS_MAX_CLIENTS', '16'))
@@ -30,7 +31,7 @@ def _post_close_cleanup(client: str):
     logging.warning(f'client connection for {client} closed')
 
 
-async def ws_message_processor(ws: WebSocketConnection, client: str) -> None:
+async def ws_message_processor(ws: WebSocketConnection, user: User) -> None:
     """Task that reads and routes messages from WebSocket connection.
 
     :param ws: WebSocket connection object
@@ -52,7 +53,7 @@ async def ws_message_processor(ws: WebSocketConnection, client: str) -> None:
                 await ws.send_message(json.dumps(payload))
             else:
                 try:
-                    resp = await route_message(client, payload)
+                    resp = await route_message(user, payload)
                     log.debug('message processed')
                     if resp:
                         await ws.send_message(json.dumps(resp))
@@ -63,11 +64,11 @@ async def ws_message_processor(ws: WebSocketConnection, client: str) -> None:
                     log.exception('message routing error')
                     await ws.send_message(json.dumps(payload))
         except ConnectionClosed:
-            _post_close_cleanup(client)
+            _post_close_cleanup(user.name)
             break
 
 
-async def chat_message_processor(ws: WebSocketConnection, client: str) -> None:
+async def chat_message_processor(ws: WebSocketConnection, user: User) -> None:
     """Task that collects messages from chat topic and sends them to WebSocket
     client.
 
@@ -78,19 +79,15 @@ async def chat_message_processor(ws: WebSocketConnection, client: str) -> None:
     """
     while True:
         if ws.closed:
-            _post_close_cleanup(client)
+            _post_close_cleanup(user.name)
             break
-        user = registry.get(client_id=client)
-        if user:
-            async for message in user.message_stream():
-                try:
-                    await message.send(ws)
-                    log.debug('message sent')
-                except ConnectionClosed:
-                    _post_close_cleanup(client)
-                    break
-        else:
-            await trio.sleep(0.2)
+        async for message in user.message_stream():
+            try:
+                await message.send(ws)
+                log.debug('message sent')
+            except ConnectionClosed:
+                _post_close_cleanup(user.name)
+                break
 
 
 async def server(request: WebSocketRequest) -> None:
@@ -114,9 +111,22 @@ async def server(request: WebSocketRequest) -> None:
         await request.reject(401, body='Please authenticate first'.encode('utf-8'))
         log.warning(f'Client {client} not authenticated')
         return
+    token = request.path[1:]
+    rv = check_token(token)
+    if rv.result != ResultType.OK:
+        await request.reject(403, body='Token authentication failure'.encode('utf-8'))
+        log.warning(
+            f'Client {client} token authentication '
+            f'failure: {rv.result.value}, token: {token}'
+        )
+        return
+    user = await User.find(rv.value)
+    if user is None:
+        await request.reject(400, body='User unknown'.encode('utf-8'))
+        return
     ws = await request.accept()
     STATS['num_clients'] += 1
-    log.debug(f'connection from {client} accepted')
+    log.debug(f'connection from {client} ({user.name}) accepted')
     async with trio.open_nursery() as nursery:
         nursery.start_soon(ws_message_processor, ws, client)
         nursery.start_soon(chat_message_processor, ws, client)
