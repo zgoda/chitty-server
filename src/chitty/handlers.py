@@ -69,15 +69,15 @@ async def post_reply_message(
     await msg.publish()
 
 
-async def subscribe(user: User, *, value: str) -> Optional[dict]:
+async def subscribe(user: User, *, value: str) -> dict:
     """Subscribe user to specified topic.
 
     :param client: client ID
     :type client: str
     :param value: topic name
     :type value: str
-    :return: optional error structure
-    :rtype: Optional[dict]
+    :return: subscription confirmation message structure
+    :rtype: dict
     """
     user.subscribe(value)
     await trio.sleep(0)
