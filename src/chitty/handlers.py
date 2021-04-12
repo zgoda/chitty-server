@@ -24,8 +24,8 @@ async def post_message(user: User, *, to: str, value: str) -> Optional[dict]:
     This function return None if operation succeeds, error structure
     otherwise.
 
-    :param client: client ID
-    :type client: str
+    :param user: user object
+    :type client: User
     :param to: topic name
     :type to: str
     :param value: message text
@@ -46,10 +46,23 @@ async def post_message(user: User, *, to: str, value: str) -> Optional[dict]:
 async def post_reply_message(
             user: User, *, to: str, value: str, replying_to: Mapping[str, str]
         ) -> Optional[dict]:
+    """Post reply message.
+
+    :param user: sender user object
+    :type user: User
+    :param to: topic name
+    :type to: str
+    :param value: message string
+    :type value: str
+    :param replying_to: reply recipient data
+    :type replying_to: Mapping[str, str]
+    :return: optonal error response from message posting
+    :rtype: Optional[dict]
+    """
     ret = await post_message(user, to=to, value=value)
     if ret:
         return ret
-    in_reply_to = replying_to['key']
+    in_reply_to = replying_to['name']
     msg = make_message(
         user_data=SYS_USER_DATA, topic=in_reply_to, msg="You've got reply"
     )
@@ -74,15 +87,17 @@ async def subscribe(user: User, *, value: str) -> Optional[dict]:
     return payload
 
 
-async def direct_message(user: User, *, to: str, value: str) -> None:
+async def direct_message(user: User, *, to: str, value: str) -> Optional[dict]:
     """Send direct message to another user.
 
-    :param client: client ID
-    :type client: str
-    :param to: recipient user ID (key)
+    :param user: sender object
+    :type user: User
+    :param to: recipient name
     :type to: str
     :param value: message
     :type value: str
+    :return: optional error structure
+    :rtype: Optional[dict]
     """
     recipient = registry.get(to)
     if not recipient:
@@ -90,6 +105,6 @@ async def direct_message(user: User, *, to: str, value: str) -> None:
         return utils.error_response(
             errors.E_REASON_NOTREG, message='Recipient not found'
         )
-    message = make_message(user_data=user.to_map(), topic=recipient.key, msg=value)
+    message = make_message(user_data=user.to_map(), topic=recipient.name, msg=value)
     await message.publish()
-    log.debug(f'direct message from {user.name} to {to} sent')
+    log.debug(f'direct message from {user.name} to {recipient.name} sent')

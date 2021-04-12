@@ -1,10 +1,12 @@
 import json
 import time
 from dataclasses import dataclass
+
 try:
     from functools import cached_property
 except ImportError:
     from cached_property import cached_property
+
 from typing import Mapping, Union
 
 from trio_websocket import WebSocketConnection

@@ -137,7 +137,7 @@ class User:
 
 
 class UserRegistry:
-    """Simple user/client registry.
+    """Simple user registry.
     """
 
     def __init__(self):
@@ -166,7 +166,7 @@ class UserRegistry:
     def remove(self, name: str) -> None:
         """Remove user from registry.
 
-        :param name: user ID
+        :param name: user name
         :type name: str
         """
         self._users.pop(name, None)

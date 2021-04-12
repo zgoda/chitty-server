@@ -9,8 +9,8 @@ from trio_websocket import (
 
 from . import errors
 from .controller import route_message
-from .services.auth import check_token, ResultType
-from .user import registry, User
+from .services.auth import ResultType, check_token
+from .user import User, registry
 from .utils import error_response
 
 MAX_CLIENTS = int(os.getenv('WS_MAX_CLIENTS', '16'))

@@ -34,7 +34,17 @@ def validate_message(
     return set(message.keys()).issuperset(MSG_FIELDS[msg_type])
 
 
-def normalise_message_fields(message):
+def normalise_message_fields(message: dict) -> None:
+    """Make message fields "Python friendly" from "JS friendly".
+
+    This is required to use message data as keyword param in
+    :class:`~chitty.message.Message` constructor.
+
+    This function changes message structure in place.
+
+    :param message: message structure
+    :type message: dict
+    """
     invalid = {'replyingTo'}
     subst = {
         'replyingTo': 'replying_to',
