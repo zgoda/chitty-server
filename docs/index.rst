@@ -14,7 +14,8 @@ Server
 Web client
 ^^^^^^^^^^
 
-* TypeScript in `Preact <https://preactjs.com/>`_
+* more `Preact <https://preactjs.com/>`_
+* TypeScript checks for regular JavaScript
 * application state management with hooks only
 
 Mobile client
