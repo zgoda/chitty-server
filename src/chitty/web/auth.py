@@ -12,6 +12,7 @@ class UserNamesResource:
         self.user_mgr = user_manager
 
     def on_get(self, req: Request, resp: Response, name: str) -> None:
+        resp.headers['Content-Type'] = 'text/plain'
         if self.user_mgr.user_exists(name):
             resp.status = falcon.HTTP_400
 
