@@ -6,6 +6,7 @@ from falcon import Request, Response
 class ServerMetadataResource:
 
     def on_get(self, req: Request, resp: Response) -> None:
+        resp.cache_control = ['public', 'max-age=604800']
         resp.media = {
             'chat': {
                 'host': os.getenv('CHITTY_CHAT_HOST', '127.0.0.1'),
