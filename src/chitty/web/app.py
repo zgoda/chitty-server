@@ -3,6 +3,7 @@ import os
 import falcon
 
 from .auth import UserLoginResource, UserNamesResource, UserRegistrationResource
+from .meta import ServerMetadataResource
 from .services import Storage, UserPoolManager
 
 _resources = {}
@@ -19,12 +20,14 @@ class App(falcon.App):
         self.register_routes()
 
     def register_routes(self):
-        _resources.setdefault('register', UserRegistrationResource(self.user_mgr))
-        _resources.setdefault('login', UserLoginResource(self.user_mgr))
-        _resources.setdefault('names', UserNamesResource(self.user_mgr))
-        self.add_route('/register', _resources['register'])
-        self.add_route('/login', _resources['login'])
-        self.add_route('/names/{name}', _resources['names'])
+        reg = _resources.setdefault('register', UserRegistrationResource(self.user_mgr))
+        login = _resources.setdefault('login', UserLoginResource(self.user_mgr))
+        names = _resources.setdefault('names', UserNamesResource(self.user_mgr))
+        meta = _resources.setdefault('meta', ServerMetadataResource())
+        self.add_route('/register', reg)
+        self.add_route('/login', login)
+        self.add_route('/names/{name}', names)
+        self.add_route('/meta', meta)
 
 
 def make_app() -> App:
