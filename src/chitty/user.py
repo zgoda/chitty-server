@@ -37,7 +37,7 @@ class User:
         self._pubsub = redis.pubsub(self.name, *DEFAULT_TOPICS).autodecode.with_channel
         self._pubsub.psubscribe('sys:*')
         self._topics = set(DEFAULT_TOPICS)
-        self._topics.append(self.name)
+        self._topics.add(self.name)
 
     @classmethod
     async def find(cls, name: str) -> Optional[User]:
