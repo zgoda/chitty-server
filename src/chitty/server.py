@@ -26,7 +26,7 @@ STATS = {
 
 
 def _post_close_cleanup(client: str):
-    registry.remove(client_id=client)
+    registry.remove(name=client)
     STATS['num_clients'] -= 1
     logging.warning(f'client connection for {client} closed')
 
@@ -128,8 +128,8 @@ async def server(request: WebSocketRequest) -> None:
     STATS['num_clients'] += 1
     log.debug(f'connection from {client} ({user.name}) accepted')
     async with trio.open_nursery() as nursery:
-        nursery.start_soon(ws_message_processor, ws, client)
-        nursery.start_soon(chat_message_processor, ws, client)
+        nursery.start_soon(ws_message_processor, ws, user)
+        nursery.start_soon(chat_message_processor, ws, user)
 
 
 async def main(*, host: str, port: int) -> None:

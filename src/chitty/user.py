@@ -42,7 +42,7 @@ class User:
     @classmethod
     async def find(cls, name: str) -> Optional[User]:
         key = f'{keys.USERS}:{name}'
-        data = await redis().hgetall(key)
+        data = await redis().hgetall(key).autodecode
         if data:
             data.pop('password', None)
             data['created'] = datetime.fromtimestamp(
@@ -50,7 +50,7 @@ class User:
             )
             user = cls(**data)
             key = f'{keys.TOPICS}:{name}'
-            user_topics = await redis().smembers(key)
+            user_topics = await redis().smembers(key).autodecode
             for topic in user_topics:
                 user.subscribe(topic)
             return user
@@ -93,7 +93,7 @@ class User:
         :type topic: str
         """
         self._pubsub.subscribe(topic)
-        topics = await redis().smembers(keys.TOPICS)
+        topics = await redis().smembers(keys.TOPICS).autodecode
         if topic not in topics:
             await redis().sadd(keys.TOPICS, topic)
             await event.new_topic_created(topic)
@@ -120,7 +120,7 @@ class User:
             self._topics.add(topic)
             key = f'{keys.TOPICS}:{self.name}'
             await redis().sadd(key, topic)
-        topics = await redis().smembers(keys.TOPICS)
+        topics = await redis().smembers(keys.TOPICS).autodecode
         if topic != self.name and topic not in topics:
             await redis().sadd(keys.TOPICS, topic)
             await event.new_topic_created(topic)
