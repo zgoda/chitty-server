@@ -26,8 +26,8 @@ class UserRegistrationResource:
         data = req.media
         resp.status = falcon.HTTP_200
         try:
-            token = self.user_mgr.create_user(data['name'], data['password'])
-            resp.media = {'token': token}
+            user_data = self.user_mgr.create_user(data['name'], data['password'])
+            resp.media = user_data.to_map()
         except UserExists:
             code = falcon.HTTP_400[:3]
             resp.media = error_response(reason=int(code), message='user already exists')
@@ -43,8 +43,8 @@ class UserLoginResource:
         data = req.media
         resp.status = falcon.HTTP_200
         try:
-            token = self.user_mgr.login(data['name'], data['password'])
-            resp.media = {'token': token}
+            user_data = self.user_mgr.login(data['name'], data['password'])
+            resp.media = user_data.to_map()
         except UserError:
             code = falcon.HTTP_404[:3]
             resp.media = error_response(
