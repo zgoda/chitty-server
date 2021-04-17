@@ -52,7 +52,7 @@ class User:
             key = f'{keys.TOPICS}:{name}'
             user_topics = await redis().smembers(key).autodecode
             for topic in user_topics:
-                user.subscribe(topic)
+                await user.subscribe(topic)
             return user
 
     @classmethod
