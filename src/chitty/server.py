@@ -25,7 +25,7 @@ STATS = {
 }
 
 
-def _post_close_cleanup(client: str):
+def _post_close_cleanup(client: str) -> None:
     registry.remove(name=client)
     STATS['num_clients'] -= 1
     logging.warning(f'client connection for {client} closed')
