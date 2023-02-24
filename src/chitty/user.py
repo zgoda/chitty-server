@@ -75,7 +75,7 @@ class User:
         :return: serialised data
         :rtype: MutableMapping[str, str]
         """
-        created = self.created or datetime.utcnow()
+        created = self.created or datetime.now(tz=timezone.utc)
         data = {"name": self.name, "created": created}
         if with_topics:
             data["topics"] = list(self._topics)

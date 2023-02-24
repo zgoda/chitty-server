@@ -1,5 +1,6 @@
 import time
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import List, Mapping, Optional, Union
 
 import redis
@@ -61,9 +62,12 @@ class Storage:
         return UserData(name=name, created=created, topics=topics)
 
     def get_user(self, name) -> UserData:
-        created = self.redis.hget(f"{keys.USERS}:{name}", "created")
+        created = float(
+            self.redis.hget(f"{keys.USERS}:{name}", "created")
+            or datetime.now(tz=timezone.utc).timestamp()
+        )
         topics = self.redis.smembers(f"{keys.TOPICS}:{name}")
-        return UserData(name=name, created=created, topics=list(topics))  # type: ignore
+        return UserData(name=name, created=created, topics=list(topics))
 
     def get_user_topics(self, name) -> List[str]:
         return list(self.redis.smembers(f"{keys.TOPICS}:{name}"))
@@ -101,8 +105,8 @@ class UserPoolManager:
         :param password: user password
         :type password: str
         :raises errors.UserExists: if specified name is already taken
-        :return: authentication token
-        :rtype: str
+        :return: user data containing auth token
+        :rtype: UserData
         """
         if self.db.user_exists(name):
             raise errors.UserExists("user already exists")
@@ -124,8 +128,8 @@ class UserPoolManager:
         :type password: str
         :raises errors.UserNotFound: if account does not exist or provided
                                      credentials are invalid
-        :return: authentication token
-        :rtype: str
+        :return: user data containing auth token
+        :rtype: UserData
         """
         secret = self.db.get_password(name)
         if not secret:
