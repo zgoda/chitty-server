@@ -18,7 +18,9 @@ from .user import User, registry
 log = logging.getLogger(__name__)
 
 
-async def post_message(user: User, *, to: str, value: str) -> Optional[dict]:
+async def post_message(
+    user: User, *, to: str, value: str
+) -> Optional[Mapping[str, str | Mapping[str, str]]]:
     """Post chat message on specific topic.
 
     This function return None if operation succeeds, error structure
@@ -34,18 +36,18 @@ async def post_message(user: User, *, to: str, value: str) -> Optional[dict]:
     :rtype: Optional[dict]
     """
     if to in topic.SYSTEM_TOPICS:
-        log.warning(f'user {user.name} tries to post to system topic')
+        log.warning(f"user {user.name} tries to post to system topic")
         return utils.error_response(
             errors.E_REASON_TOPIC_SYSTEM,
-            message=f'Topic {to} is not available for posting',
+            message=f"Topic {to} is not available for posting",
         )
     await user.post_message(to, value)
-    log.debug(f'{user.name} posted message to {to}')
+    log.debug(f"{user.name} posted message to {to}")
 
 
 async def post_reply_message(
-            user: User, *, to: str, value: str, replying_to: Mapping[str, str]
-        ) -> Optional[dict]:
+    user: User, *, to: str, value: str, replying_to: Mapping[str, str]
+) -> Optional[Mapping[str, str | Mapping[str, str]]]:
     """Post reply message.
 
     :param user: sender user object
@@ -57,19 +59,19 @@ async def post_reply_message(
     :param replying_to: reply recipient data
     :type replying_to: Mapping[str, str]
     :return: optonal error response from message posting
-    :rtype: Optional[dict]
+    :rtype: Optional[Mapping[str, str | Mapping[str, str]]]
     """
     ret = await post_message(user, to=to, value=value)
     if ret:
         return ret
-    in_reply_to = replying_to['name']
+    in_reply_to = replying_to["name"]
     msg = make_message(
         user_data=SYS_USER_DATA, topic=in_reply_to, msg="You've got reply"
     )
     await msg.publish()
 
 
-async def subscribe(user: User, *, value: str) -> dict:
+async def subscribe(user: User, *, value: str) -> Mapping[str, str]:
     """Subscribe user to specified topic.
 
     :param client: client ID
@@ -79,15 +81,17 @@ async def subscribe(user: User, *, value: str) -> dict:
     :return: subscription confirmation message structure
     :rtype: dict
     """
-    user.subscribe(value)
+    await user.subscribe(value)
     await trio.sleep(0)
     payload = user.to_map(with_topics=True)
-    payload['type'] = MSG_TYPE_SUBSCRIBE_TOPIC
-    log.debug(f'{user.name} subscribed to {value}')
+    payload["type"] = MSG_TYPE_SUBSCRIBE_TOPIC
+    log.debug(f"{user.name} subscribed to {value}")
     return payload
 
 
-async def direct_message(user: User, *, to: str, value: str) -> Optional[dict]:
+async def direct_message(
+    user: User, *, to: str, value: str
+) -> Optional[Mapping[str, str | Mapping[str, str]]]:
     """Send direct message to another user.
 
     :param user: sender object
@@ -97,14 +101,14 @@ async def direct_message(user: User, *, to: str, value: str) -> Optional[dict]:
     :param value: message
     :type value: str
     :return: optional error structure
-    :rtype: Optional[dict]
+    :rtype: Optional[Mapping[str, str | Mapping[str, str]]]
     """
     recipient = registry.get(to)
     if not recipient:
-        log.warning(f'recipient {to} not found')
+        log.warning(f"recipient {to} not found")
         return utils.error_response(
-            errors.E_REASON_NOTREG, message='Recipient not found'
+            errors.E_REASON_NOTREG, message="Recipient not found"
         )
     message = make_message(user_data=user.to_map(), topic=recipient.name, msg=value)
     await message.publish()
-    log.debug(f'direct message from {user.name} to {recipient.name} sent')
+    log.debug(f"direct message from {user.name} to {recipient.name} sent")

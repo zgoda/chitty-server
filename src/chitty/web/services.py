@@ -19,20 +19,21 @@ class UserData:
 
     def to_map(self) -> Mapping[str, Union[str, float, List[str]]]:
         return {
-            'name': self.name,
-            'created': self.created,
-            'topics': self.topics,
-            'token': self.token or ''
+            "name": self.name,
+            "created": self.created,
+            "topics": self.topics,
+            "token": self.token or "",
         }
 
 
 class Storage:
-
     def __init__(
-                self, host: Optional[str] = None, port: Optional[int] = None,
-                database: Optional[int] = None,
-            ):
-        host = host or '127.0.0.1'
+        self,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        database: Optional[int] = None,
+    ):
+        host = host or "127.0.0.1"
         port = port or 6379
         if database is None:
             database = 0
@@ -41,43 +42,42 @@ class Storage:
         )
 
     def user_exists(self, name: str) -> bool:
-        key = f'{keys.USERS}:{name}'
-        return self.redis.exists(key)
+        key = f"{keys.USERS}:{name}"
+        return self.redis.exists(key) != 0
 
     def add_user(self, name: str, password: str) -> UserData:
         created = time.time()
         pipe = self.redis.pipeline()
         data = {
-            'name': name,
-            'password': password,
-            'created': created,
+            "name": name,
+            "password": password,
+            "created": created,
         }
-        pipe.hset(f'{keys.USERS}:{name}', mapping=data)
+        pipe.hset(f"{keys.USERS}:{name}", mapping=data)  # type: ignore
         topics = [name]
         topics.extend(DEFAULT_TOPICS)
-        pipe.sadd(f'{keys.TOPICS}:{name}', *topics)
+        pipe.sadd(f"{keys.TOPICS}:{name}", *topics)
         pipe.execute()
         return UserData(name=name, created=created, topics=topics)
 
     def get_user(self, name) -> UserData:
-        created = self.redis.hget(f'{keys.USERS}:{name}', 'created')
-        topics = self.redis.smembers(f'{keys.TOPICS}:{name}')
-        return UserData(name=name, created=created, topics=list(topics))
+        created = self.redis.hget(f"{keys.USERS}:{name}", "created")
+        topics = self.redis.smembers(f"{keys.TOPICS}:{name}")
+        return UserData(name=name, created=created, topics=list(topics))  # type: ignore
 
     def get_user_topics(self, name) -> List[str]:
-        return list(self.redis.smembers(f'{keys.TOPICS}:{name}'))
+        return list(self.redis.smembers(f"{keys.TOPICS}:{name}"))
 
     def set_auth_token(self, name: str, token: str) -> None:
-        key = f'{keys.LOGINS}:{name}'
-        self.redis.hset(key, mapping={'token': token, 'date': time.time()})
+        key = f"{keys.LOGINS}:{name}"
+        self.redis.hset(key, mapping={"token": token, "date": time.time()})
 
     def get_password(self, name: str) -> Optional[str]:
-        key = f'{keys.USERS}:{name}'
-        return self.redis.hget(key, 'password')
+        key = f"{keys.USERS}:{name}"
+        return self.redis.hget(key, "password")
 
 
 class UserPoolManager:
-
     def __init__(self, db: Storage):
         self.db = db
 
@@ -105,10 +105,10 @@ class UserPoolManager:
         :rtype: str
         """
         if self.db.user_exists(name):
-            raise errors.UserExists('user already exists')
+            raise errors.UserExists("user already exists")
         secret = password_context.hash(password)
         user_data = self.db.add_user(name, secret)
-        token = serializer.dumps(name)
+        token = str(serializer.dumps(name))
         self.db.set_auth_token(name, token)
         user_data.token = token
         return user_data
@@ -129,11 +129,11 @@ class UserPoolManager:
         """
         secret = self.db.get_password(name)
         if not secret:
-            raise errors.UserNotFound('user does not exist')
+            raise errors.UserNotFound("user does not exist")
         if not password_context.verify(password, secret):
-            raise errors.UserNotFound('invalid password')
+            raise errors.UserNotFound("invalid password")
         user_data = self.db.get_user(name)
-        token = serializer.dumps(name)
+        token = str(serializer.dumps(name))
         self.db.set_auth_token(name, token)
         user_data.token = token
         return user_data

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 try:
     from functools import cached_property
 except ImportError:
-    from cached_property import cached_property
+    from cached_property import cached_property  # type: ignore
 
 from typing import Mapping, Union
 
@@ -13,11 +13,11 @@ from trio_websocket import WebSocketConnection
 
 from .storage import redis
 
-MSG_TYPE_SUBSCRIBE_TOPIC = 'sub'
-MSG_TYPE_DIRECT_MESSAGE = 'dm'
-MSG_TYPE_MESSAGE = 'msg'
-MSG_TYPE_REPLY = 'reply'
-MSG_TYPE_EVENT = 'event'
+MSG_TYPE_SUBSCRIBE_TOPIC = "sub"
+MSG_TYPE_DIRECT_MESSAGE = "dm"
+MSG_TYPE_MESSAGE = "msg"
+MSG_TYPE_REPLY = "reply"
+MSG_TYPE_EVENT = "event"
 
 KNOWN_MSG_TYPES = [
     MSG_TYPE_SUBSCRIBE_TOPIC,
@@ -27,10 +27,10 @@ KNOWN_MSG_TYPES = [
 ]
 
 MSG_FIELDS = {
-    MSG_TYPE_SUBSCRIBE_TOPIC: ['value'],
-    MSG_TYPE_DIRECT_MESSAGE: ['to', 'value'],
-    MSG_TYPE_MESSAGE: ['to', 'value'],
-    MSG_TYPE_REPLY: ['to', 'value', 'replyingTo']
+    MSG_TYPE_SUBSCRIBE_TOPIC: ["value"],
+    MSG_TYPE_DIRECT_MESSAGE: ["to", "value"],
+    MSG_TYPE_MESSAGE: ["to", "value"],
+    MSG_TYPE_REPLY: ["to", "value", "replyingTo"],
 }
 
 
@@ -52,9 +52,8 @@ class Message:
         return json.dumps(self.payload)
 
     async def publish(self) -> None:
-        """Publish message to Redis PubSub channel (topic).
-        """
-        await redis().publish(self.topic, self.serialised_payload)
+        """Publish message to Redis PubSub channel (topic)."""
+        await redis().publish(self.topic, self.serialised_payload)  # type: ignore
 
     async def send(self, ws: WebSocketConnection) -> None:
         """Send message to websocket client connection.
@@ -65,7 +64,9 @@ class Message:
         await ws.send_message(self.serialised_payload)
 
 
-def make_message(user_data: dict, topic: str, msg: str, **extra) -> Message:
+def make_message(
+    user_data: Mapping[str, str], topic: str, msg: str, **extra: str
+) -> Message:
     """Build chat message structure.
 
     Any extra data passed in kwargs will be added to message payload.
@@ -80,10 +81,10 @@ def make_message(user_data: dict, topic: str, msg: str, **extra) -> Message:
     :rtype: Message
     """
     payload = {
-        'from': user_data,
-        'message': msg,
-        'date': time.time(),
-        'topic': topic,
+        "from": user_data,
+        "message": msg,
+        "date": time.time(),
+        "topic": topic,
     }
     payload.update(extra)
     return Message(topic=topic, payload=payload)

@@ -1,5 +1,5 @@
-DEFAULT_TOPICS = ['general']
+DEFAULT_TOPICS = ["general"]
 
-EVENTS_TOPIC = 'sys:events'
+EVENTS_TOPIC = "sys:events"
 
 SYSTEM_TOPICS = [EVENTS_TOPIC]

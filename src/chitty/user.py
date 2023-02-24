@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Generator, Mapping, Optional
+from typing import AsyncGenerator, Mapping, MutableMapping, Optional
 
 from redio.pubsub import PubSub
 
@@ -35,22 +35,22 @@ class User:
 
     def __post_init__(self):
         self._pubsub = redis.pubsub(self.name, *DEFAULT_TOPICS).autodecode.with_channel
-        self._pubsub.psubscribe('sys:*')
+        self._pubsub.psubscribe("sys:*")
         self._topics = set(DEFAULT_TOPICS)
         self._topics.add(self.name)
 
     @classmethod
     async def find(cls, name: str) -> Optional[User]:
-        key = f'{keys.USERS}:{name}'
-        data = await redis().hgetall(key).autodecode
+        key = f"{keys.USERS}:{name}"
+        data = await redis().hgetall(key).autodecode  # type: ignore
         if data:
-            data.pop('password', None)
-            data['created'] = datetime.fromtimestamp(
-                float(data['created']), tz=timezone.utc
+            data.pop("password", None)
+            data["created"] = datetime.fromtimestamp(
+                float(data["created"]), tz=timezone.utc
             )
             user = cls(**data)
-            key = f'{keys.TOPICS}:{name}'
-            user_topics = await redis().smembers(key).autodecode
+            key = f"{keys.TOPICS}:{name}"
+            user_topics = await redis().smembers(key).autodecode  # type: ignore
             for topic in user_topics:
                 await user.subscribe(topic)
             return user
@@ -66,21 +66,19 @@ class User:
         """
         return cls(**data)
 
-    def to_map(self, with_topics: bool = False) -> Mapping[str, str]:
+    def to_map(self, with_topics: bool = False) -> MutableMapping[str, str]:
         """Serialise User object into data dictionary.
 
         :param with_topics: flag whether list of subscribed topics should be
                             returned along with basic data, defaults to False
         :type with_topics: bool, optional
         :return: serialised data
-        :rtype: Mapping[str, str]
+        :rtype: MutableMapping[str, str]
         """
-        data = {
-            'name': self.name,
-            'created': self.created.timestamp()
-        }
+        created = self.created or datetime.utcnow()
+        data = {"name": self.name, "created": created}
         if with_topics:
-            data['topics'] = list(self._topics)
+            data["topics"] = list(self._topics)
         return data
 
     async def subscribe(self, topic: str) -> None:
@@ -92,14 +90,14 @@ class User:
         :param topic: topic name
         :type topic: str
         """
-        self._pubsub.subscribe(topic)
-        topics = await redis().smembers(keys.TOPICS).autodecode
+        self._pubsub.subscribe(topic)  # type: ignore
+        topics = await redis().smembers(keys.TOPICS).autodecode  # type: ignore
         if topic not in topics:
-            await redis().sadd(keys.TOPICS, topic)
+            await redis().sadd(keys.TOPICS, topic)  # type: ignore
             await event.new_topic_created(topic)
         self._topics.add(topic)
-        key = f'{keys.TOPICS}:{self.name}'
-        await redis().sadd(key, topic)
+        key = f"{keys.TOPICS}:{self.name}"
+        await redis().sadd(key, topic)  # type: ignore
 
     async def post_message(self, topic: str, message: str) -> None:
         """Post chat message to a topic.
@@ -112,33 +110,32 @@ class User:
         :param message: message text
         :type message: str
         """
-        self._pubsub.subscribe(topic)
-        kw = {'type': MSG_TYPE_MESSAGE}
+        self._pubsub.subscribe(topic)  # type: ignore
+        kw = {"type": MSG_TYPE_MESSAGE}
         msg_obj = make_message(self.to_map(), topic, message, **kw)
         await msg_obj.publish()
         if topic not in self._topics and topic != self.name:
             self._topics.add(topic)
-            key = f'{keys.TOPICS}:{self.name}'
-            await redis().sadd(key, topic)
-        topics = await redis().smembers(keys.TOPICS).autodecode
+            key = f"{keys.TOPICS}:{self.name}"
+            await redis().sadd(key, topic)  # type: ignore
+        topics = await redis().smembers(keys.TOPICS).autodecode  # type: ignore
         if topic != self.name and topic not in topics:
-            await redis().sadd(keys.TOPICS, topic)
+            await redis().sadd(keys.TOPICS, topic)  # type: ignore
             await event.new_topic_created(topic)
 
-    async def message_stream(self) -> Generator[Message, None, None]:
+    async def message_stream(self) -> AsyncGenerator[Message, None]:
         """Generator that yields Message objects as they come to pubsub
         receiver.
 
         :yield: received message and topic wrapped in Message object
-        :rtype: Generator[Message, None, None]
+        :rtype: AsyncGenerator[Message, None]
         """
-        async for topic, message in self._pubsub:
-            yield Message(topic=topic, payload=message)
+        async for topic, message in self._pubsub:  # type: ignore
+            yield Message(topic=topic, payload=message)  # type: ignore
 
 
 class UserRegistry:
-    """Simple user registry.
-    """
+    """Simple user registry."""
 
     def __init__(self):
         self._users = {}

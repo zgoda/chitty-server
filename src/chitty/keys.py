@@ -1,3 +1,3 @@
-USERS = 'users'
-LOGINS = 'logins'
-TOPICS = 'topics'
+USERS = "users"
+LOGINS = "logins"
+TOPICS = "topics"
