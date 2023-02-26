@@ -24,4 +24,4 @@ def main():
 
     application = make_app()
     opts = parse_args()
-    run_simple(opts.host, opts.port, application, use_reloader=True, use_debugger=False)
+    run_simple(opts.host, opts.port, application, use_reloader=True)
